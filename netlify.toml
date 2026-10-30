@@ -5,6 +5,9 @@
 
 [build.environment]
   NODE_VERSION = "24"
+  # Public application settings also appear in source, examples, and static assets.
+  # Keep credential scanning enabled; exclude only these non-sensitive values.
+  SECRETS_SCAN_OMIT_KEYS = "AGREEMENT_VERSION,EMAIL_ALLOW_TEST,EMAIL_ENABLED,EMAIL_FROM,ESSENTIAL_PRICE_INR,MERCHANT_NAME,PAYMENT_DESCRIPTION,PAYMENTS_ENABLED,PUBLIC_ORIGIN,SMTP_HOST,SMTP_PORT,SMTP_SECURE"
 
 [functions]
   node_bundler = "esbuild"
