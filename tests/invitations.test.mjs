@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createHmac} from 'node:crypto';
 import {loadConfig} from '../server/config.mjs';
 import {createSheetsApp} from '../server/sheets-app.mjs';
+import {createSheetStore} from '../server/sheets-store.mjs';
 import {applySheetAction} from '../server/sheet-state.mjs';
 import {memorySheetStore} from './sheets-fixture.mjs';
 import {clientDetails} from './client-fixture.mjs';
@@ -27,6 +28,12 @@ function fixture(){
 test('invitation mode requires a strong configured admin credential',()=>{
   assert.throws(()=>loadConfig({INVITATIONS_REQUIRED:'true'}),/INVITATION_ADMIN_KEY/);
   assert.throws(()=>loadConfig({INVITATION_ADMIN_KEY:'short'}),/INVITATION_ADMIN_KEY/);
+});
+
+test('old Apps Script invitation responses explain the required deployment update',async()=>{
+  const store=createSheetStore({environment:'test',sheetStore:{url:'https://script.google.com/macros/s/fixture/exec',secret:'x'.repeat(64)}},async()=>Response.json({ok:false,status:401,error:'Your registration session has expired. Reload this page to continue.'}));
+  await assert.rejects(store('invitation-list'),error=>error.status===503 && /State.gs/.test(error.message));
+  await assert.rejects(store('get',{sessionHash:'expired'}),error=>error.status===401 && /session has expired/.test(error.message));
 });
 
 test('admin rejects unauthenticated requests and cross-origin writes without disclosing keys',async()=>{
