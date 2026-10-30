@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {loadConfig} from '../server/config.mjs';
 import {normalizeEmail} from '../server/email.mjs';
-import {createEmailSender} from '../server/delivery-adapters.mjs';
+import {createEmailSender,createInvitationSender} from '../server/delivery-adapters.mjs';
 function fixture() {
   const config=loadConfig({});
   config.email={...config.email,enabled:true,allowTest:true,from:'noreply@tootica.com'};
@@ -32,4 +32,13 @@ test('SMTP rejection is retryable but disconnect during DATA is ambiguous', asyn
     const sender = createEmailSender(f.config, {sendMail:async () => {throw cause;}});
     await assert.rejects(sender(f.invoice()), error => error.definitive === definitive);
   }
+});
+
+test('invitation email uses the existing sender, recipient and private link without a payment attachment',async()=>{
+  const {config}=fixture();const messages=[];
+  const sender=createInvitationSender(config,{sendMail:async message=>{messages.push(message);return {accepted:['client@example.com']};}});
+  await sender({id:'invite-1',name:'Test Client',email:'client@example.com',expiresAt:Date.now()+86400000},'https://reg.tootica.com/#invite=example-token');
+  assert.equal(messages[0].from.address,'noreply@tootica.com');assert.equal(messages[0].to.address,'client@example.com');
+  assert.match(messages[0].subject,/\[TEST\].*invitation/);assert.match(messages[0].text,/https:\/\/reg\.tootica\.com\/#invite=example-token/);
+  assert.match(messages[0].text,/India Standard Time/);assert.equal(messages[0].replyTo,'support@tootica.com');assert.equal(messages[0].attachments,undefined);
 });

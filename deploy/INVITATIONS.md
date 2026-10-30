@@ -14,13 +14,23 @@ For local use, enter a separate admin key in `.env` and set `INVITATIONS_REQUIRE
 ## Invite a client
 
 1. Enter the client's name, email address and expiry (1, 3 or 7 days).
-2. Select **Create invitation**.
-3. Copy the generated link and send it directly to the client through your usual email or messaging channel. Creating an invitation does not send an email automatically.
+2. Select **Create and email invitation**. The server uses the same SMTP credentials and verified sender as payment-confirmation emails to send the private link to the entered address.
+3. Check the delivery message. You can also copy the same generated link and share it directly if needed.
 4. Ask the client to use the same browser throughout registration. Their email address is prefilled and checkout must use that email address.
 
 The full invitation link is shown only once. The Sheet stores its hash, not the usable link. If the link is lost before checkout starts, revoke the invitation and create another. Do not issue another invitation for a registration whose checkout has already started without checking payment status first.
 
 The admin list shows pending, opened, expired, revoked, checkout started, or completed. Each invitation reserves one registration row and the price at creation. Test and live invitations are separate. Invitations share the existing limit of 2,000 records per environment.
+
+## Invitation email delivery
+
+Deploy the latest generated `State.gs` as a new Apps Script version and redeploy Netlify before using automatic invitation mail. Keep the existing SMTP host, port, login and key. Set `EMAIL_ENABLED=true` with the verified `EMAIL_FROM` and approved billing address required by the application configuration. Test-mode mail additionally requires `EMAIL_ALLOW_TEST=true`; live-mode mail does not. No new SMTP account is needed. Invitation replies use `EMAIL_REPLY_TO` when configured, otherwise `support@tootica.com`.
+
+The email contains the client's private registration link, expiry in India Standard Time and same-browser instructions. It is not a payment receipt and has no invoice attachment. Emailing the link does not verify ownership of the address.
+
+The admin list has a separate email-delivery column. **Accepted for delivery** means SMTP accepted the intended recipient; check Brevo for bounces or inbox-delivery issues. Definite SMTP rejection shows **Not sent** and keeps the created link available to copy. A disconnect or failure to record acceptance shows **Check Brevo logs**; check the provider before sending the link again. Requests interrupted during sending become review-required after two minutes.
+
+Invitation emails are attempted once during creation and are not retried by the payment-email scheduler. The usable link remains only in the create response and email; the ledger stores its hash and delivery status. If a request times out, refresh the invitation list and check Brevo before creating another invitation. If you need a replacement and checkout has not started, revoke the old invitation first.
 
 ## Expiry, revocation and privacy
 

@@ -8,12 +8,13 @@ import {applySheetAction} from '../server/sheet-state.mjs';
 import {memorySheetStore} from './sheets-fixture.mjs';
 import {clientDetails} from './client-fixture.mjs';
 
-function fixture(){
+function fixture({sendInvitation,emailEnabled=false,allowTest=true}={}){
   const adminKey='admin-test-key-'.repeat(4);
   const config=loadConfig({PAYMENTS_ENABLED:'true',RAZORPAY_KEY_ID:'rzp_test_invites',RAZORPAY_KEY_SECRET:'test-secret',RAZORPAY_WEBHOOK_SECRET:'webhook-secret',INVITATIONS_REQUIRED:'true',INVITATION_ADMIN_KEY:adminKey,SHEETS_STORE_URL:'https://script.google.com/macros/s/fixture/exec',SHEETS_STORE_SECRET:'x'.repeat(64)});
   const {records,store}=memorySheetStore();let creates=0;
+  config.email.enabled=emailEnabled;config.email.allowTest=allowTest;
   const provider={payments:[],async createOrder(r){creates++;return {id:'order_invitation',receipt:r.id,amount:r.amount,currency:r.currency};},async getPayments(){return this.payments;},async getPayment(){return this.payments[0];}};
-  const app=createSheetsApp({config,store,provider});
+  const app=createSheetsApp({config,store,provider,sendInvitation});
   async function request(path,body,{cookie,admin=false,origin=config.origin,key=adminKey}={}){
     const response=await app.handle(new Request(config.origin+path,{method:body===undefined?'GET':'POST',headers:{...(cookie?{Cookie:cookie}:{}),...(admin?{Authorization:'Bearer '+key}:{}),...(body===undefined?{}:{Origin:origin,'Content-Type':'application/json','Idempotency-Key':'invite-attempt-123456'})},...(body===undefined?{}:{body:JSON.stringify(body)})}));
     const isJSON=response.headers.get('content-type')?.includes('json');
@@ -34,6 +35,42 @@ test('old Apps Script invitation responses explain the required deployment updat
   const store=createSheetStore({environment:'test',sheetStore:{url:'https://script.google.com/macros/s/fixture/exec',secret:'x'.repeat(64)}},async()=>Response.json({ok:false,status:401,error:'Your registration session has expired. Reload this page to continue.'}));
   await assert.rejects(store('invitation-list'),error=>error.status===503 && /State.gs/.test(error.message));
   await assert.rejects(store('get',{sessionHash:'expired'}),error=>error.status===401 && /session has expired/.test(error.message));
+});
+
+test('creating an invitation emails its exact link once and records delivery without storing the token',async()=>{
+  const sent=[];const f=fixture({emailEnabled:true,sendInvitation:async(invitation,url)=>sent.push({invitation,url})});
+  const result=await f.invite();assert.equal(result.status,201);assert.equal(result.body.emailDelivery,'sent');
+  assert.equal(sent.length,1);assert.equal(sent[0].invitation.email,clientDetails.email);assert.equal(sent[0].url,result.body.url);
+  assert.equal(f.records[0].invitation_mail_status,'sent');
+  assert.equal(JSON.stringify(f.records).includes(new URL(result.body.url).hash.slice(8)),false);
+  await f.request('/api/payments/admin/invitations',undefined,{admin:true});assert.equal(sent.length,1);
+});
+
+test('invitation email respects disabled mail and test-mail gating',async()=>{
+  for(const settings of [{emailEnabled:false},{emailEnabled:true,allowTest:false}]){
+    let calls=0;const f=fixture({...settings,sendInvitation:async()=>calls++});
+    const availability=await f.request('/api/payments/admin/invitations',undefined,{admin:true});
+    assert.equal(availability.body.invitationEmail.enabled,false);
+    assert.equal(availability.body.invitationEmail.reason,settings.emailEnabled?'test-disabled':'disabled');
+    const result=await f.invite();assert.equal(result.body.emailDelivery,'disabled');assert.equal(calls,0);assert.equal(f.records.length,1);
+  }
+});
+
+test('SMTP invitation failures preserve the usable link and distinguish rejection from ambiguity',async()=>{
+  for(const definitive of [true,false]){
+    let calls=0;const f=fixture({emailEnabled:true,sendInvitation:async()=>{calls++;const error=new Error('SMTP failure');error.definitive=definitive;throw error;}});
+    const result=await f.invite();assert.equal(result.status,201);assert.equal(result.body.emailDelivery,definitive?'failed':'review');assert.match(result.body.url,/#invite=/);
+    assert.equal((await f.open(result)).status,200);assert.equal(calls,1);
+  }
+});
+
+test('interrupted invitation sends require review and recorded acceptance cannot be overwritten',()=>{
+  const records=[];const payload={environment:'test',id:'mail-invite',reference:'REF',amount:1187000,invitationHash:'hash',email:clientDetails.email,name:'Client',days:1,sendEmail:true};
+  applySheetAction(records,'invitation-create',payload,1000);
+  assert.equal(applySheetAction(records,'invitation-list',{environment:'test'},1001)[0].emailDelivery,'sending');
+  assert.equal(applySheetAction(records,'invitation-list',{environment:'test'},122000)[0].emailDelivery,'review');
+  applySheetAction(records,'invitation-mail-finish',{environment:'test',id:'mail-invite',status:'sent'},122001);
+  assert.throws(()=>applySheetAction(records,'invitation-mail-finish',{environment:'test',id:'mail-invite',status:'failed'},122002),/already been recorded/);
 });
 
 test('admin rejects unauthenticated requests and cross-origin writes without disclosing keys',async()=>{

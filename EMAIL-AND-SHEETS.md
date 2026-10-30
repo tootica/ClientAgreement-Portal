@@ -24,6 +24,10 @@ Use the actual Brevo SMTP login and SMTP key, and verify the sending address/dom
 
 ## Delivery flow
 
+The admin invitation form also uses these SMTP settings. **Create and email invitation** sends the private link to the entered client email and records a separate invitation-mail status. `EMAIL_ENABLED` and test-mode `EMAIL_ALLOW_TEST` apply to invitations too. See [invitation email delivery](deploy/INVITATIONS.md#invitation-email-delivery) for setup and handling uncertain sends. Payment receipts and invitation emails have separate statuses; invitation emails are not automatically retried.
+
+If only a link is created, check the email-status banner at the top of the unlocked admin page. When `EMAIL_ENABLED=false`, the button reads **Create invitation link**, and no SMTP request is made. In Netlify, set `EMAIL_ENABLED=true`, complete `INVOICE_COMPANY_ADDRESS` and the existing SMTP/sender settings, then redeploy. Live mode does not require `EMAIL_ALLOW_TEST=true`. Updating a local env file alone does not change Netlify. Older Apps Script deployments also need the latest generated `State.gs` deployed as a new version for invitation-email status tracking. Previously created link-only invitations are not emailed automatically after enabling delivery.
+
 Captured payments store the invoice and a pending mail status in the Sheet. The verification or status request attempts delivery, attaching an in-memory paid invoice PDF. The confirmation screen claims email was sent only after SMTP accepts the intended recipient and that status is recorded. Unconfigured email shows an invoice-download fallback. Sending a message does not guarantee inbox delivery; check provider bounces if the customer reports a missing message.
 
 Netlify retries one pending email every 15 minutes using its scheduled function; local development checks once per minute. Definite SMTP rejection uses delayed retries. An ambiguous disconnect or interrupted send becomes review after two minutes, preventing automatic duplicate sends. Inspect SMTP logs before manually retrying:

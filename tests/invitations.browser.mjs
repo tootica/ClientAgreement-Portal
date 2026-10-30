@@ -8,7 +8,9 @@ import {clientDetails} from './client-fixture.mjs';
 const adminKey='browser-admin-secret-'.repeat(3);
 const config=loadConfig({PAYMENTS_ENABLED:'true',RAZORPAY_KEY_ID:'rzp_test_browser',RAZORPAY_KEY_SECRET:'test-secret',RAZORPAY_WEBHOOK_SECRET:'webhook-secret',INVITATIONS_REQUIRED:'true',INVITATION_ADMIN_KEY:adminKey,SHEETS_STORE_URL:'https://script.google.com/macros/s/browser/exec',SHEETS_STORE_SECRET:'x'.repeat(64)});
 const {records,store}=memorySheetStore();
-const server=sheetTestServer({config,store,provider:{}});
+config.email.enabled=true;config.email.allowTest=true;
+const invitationEmails=[];
+const server=sheetTestServer({config,store,provider:{},sendInvitation:async(invitation,url)=>invitationEmails.push({invitation,url})});
 let browser;
 try{
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));config.origin='http://127.0.0.1:'+server.address().port;
@@ -52,6 +54,9 @@ try{
   await admin.locator('#admin-key').fill(adminKey);
   await admin.locator('#admin-login button').click();
   await admin.locator('#admin-content').waitFor({state:'visible'});
+  assert.equal(await admin.locator('#admin-environment').count(),0);
+  assert.match(await admin.locator('#invitation-email-settings').innerText(),/email is enabled/);
+  assert.equal(await admin.locator('#invitation-create button').innerText(),'Create and email invitation');
   assert.equal(await admin.locator('#admin-key').inputValue(),'');
   await admin.locator('[name=name]').fill(clientDetails.contactName);
   await admin.locator('[name=email]').fill(clientDetails.email);
@@ -59,6 +64,8 @@ try{
   await admin.locator('#invitation-result').waitFor({state:'visible'});
   const url=await admin.locator('#invitation-link').inputValue();
   assert.match(url,/#invite=[A-Za-z0-9_-]{43}$/);
+  await admin.waitForFunction(()=>document.querySelector('#invitation-delivery').textContent.includes('accepted for delivery'));
+  assert.equal(invitationEmails.length,1);assert.equal(invitationEmails[0].url,url);assert.equal(invitationEmails[0].invitation.email,clientDetails.email);
   await client.goto(url);
   await client.waitForFunction(()=>!document.querySelector('#client-details-form').inert);
   assert.equal(await client.locator('#client-email').inputValue(),clientDetails.email);
@@ -92,6 +99,12 @@ try{
   assert.equal(await admin.locator('#admin-login').isVisible(),true);
   assert.equal(await admin.locator('#invitation-link').inputValue(),'');
   await admin.reload();assert.equal(await admin.locator('#admin-content').isVisible(),false);
+  config.email.enabled=false;
+  await admin.locator('#admin-key').fill(adminKey);
+  await admin.locator('#admin-login button').click();
+  await admin.locator('#admin-content').waitFor({state:'visible'});
+  assert.match(await admin.locator('#invitation-email-settings').innerText(),/EMAIL_ENABLED=true/);
+  assert.equal(await admin.locator('#invitation-create button').innerText(),'Create invitation link');
   assert.deepEqual(errors,[]);
   console.log('Invitation browser checks passed: hosting error handling, access cookies, admin auth, create, public gate, invited email, one browser, revocation, logout and mobile layout.');
 }finally{await browser?.close();await new Promise(resolve=>{server.close(resolve);server.closeAllConnections();});}

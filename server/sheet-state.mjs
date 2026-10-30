@@ -4,6 +4,7 @@ export function applySheetAction(records, action, p, now = Date.now()) {
   function check(ok, status, message) {if (!ok) {const e=new Error(message); e.status=status; throw e;}}
   const invitationOpen = row => row.invitation_hash && !row.invitation_revoked && row.invitation_expires>now;
   const invitationView = row => ({id:row.id,reference:row.reference,name:row.invitation_name,email:row.invitation_email,createdAt:row.created_at,expiresAt:row.invitation_expires,
+    emailDelivery:row.invitation_mail_status==='sending' && row.invitation_mail_started<now-120000?'review':row.invitation_mail_status || 'disabled',
     status:row.state==='paid'?'completed':row.invitation_revoked?'revoked':row.order_id || row.state==='creating'?'checkout started':row.invitation_expires<=now?'expired':row.sessions.length?'opened':'pending'});
   function newRecord() {
     check(records.length<2000,503,'Registration capacity needs review. Please contact support@tootica.com.');
@@ -15,7 +16,16 @@ export function applySheetAction(records, action, p, now = Date.now()) {
     const row=newRecord();
     row.invitation_hash=p.invitationHash;row.invitation_email=p.email;row.invitation_name=p.name;
     row.invitation_expires=now+p.days*86400000;row.expires_at=row.invitation_expires;
+    row.invitation_mail_status=p.sendEmail===true?'sending':'disabled';
+    if(p.sendEmail===true)row.invitation_mail_started=now;
     records.push(row);return invitationView(row);
+  }
+  if (action==='invitation-mail-finish') {
+    const row=records.find(r=>r.environment===p.environment && r.id===p.id && r.invitation_hash);
+    check(row,404,'Invitation not found.');
+    check(['sent','failed','review'].includes(p.status),400,'Invalid invitation email status.');
+    check(row.invitation_mail_status==='sending' || row.invitation_mail_status===p.status,409,'Invitation email status has already been recorded.');
+    row.invitation_mail_status=p.status;return invitationView(row);
   }
   if (action==='invitation-revoke') {
     const row=records.find(r=>r.environment===p.environment && r.id===p.id && r.invitation_hash);

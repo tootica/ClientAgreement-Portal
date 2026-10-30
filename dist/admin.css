@@ -11,6 +11,8 @@ body{padding:32px 20px;background:#f4f7fb}
 #invitation-link{word-break:break-all;min-height:80px}
 .admin-table-scroll{overflow-x:auto}.admin-shell table{border-collapse:collapse;width:100%;min-width:680px;font-size:13px;text-align:left}
 .admin-shell th,.admin-shell td{padding:12px;border-bottom:1px solid #e4e7ec;vertical-align:top;overflow-wrap:anywhere}
-.admin-shell td button{white-space:nowrap}.admin-environment{font-weight:700;color:#0b61b6!important}
+.admin-shell td button{white-space:nowrap}
+#invitation-email-settings{padding:14px 16px;background:#f3f8ff;border:1px solid #dae9fa;border-radius:10px}
+#invitation-email-settings.is-error{background:#fff7ed;border-color:#fed7aa;color:#9a3412}
 #admin-status.is-error{color:#b42318}
 @media(max-width:600px){body{padding:16px 10px}.admin-shell{padding:24px 16px}.admin-shell th,.admin-shell td{padding:10px 8px}#invitation-result{padding:16px}}

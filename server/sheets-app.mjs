@@ -4,13 +4,13 @@ import {createRazorpay,validSignature} from './razorpay.mjs';
 import {validateClientDetails,normalizeEmail} from '../dist/client-details.mjs';
 import {availablePackage,packageName} from '../dist/packages.mjs';
 import {renderInvoice} from './invoice-pdf.mjs';
-import {createEmailSender} from './delivery-adapters.mjs';
+import {createEmailSender,createInvitationSender} from './delivery-adapters.mjs';
 
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const orderPattern=/^order_[A-Za-z0-9]+$/;
 const paymentPattern=/^pay_[A-Za-z0-9]+$/;
 function check(ok,status,message) {if(!ok){const error=new Error(message);error.status=status;throw error;}}
-export function createSheetsApp({config,store=createSheetStore(config),provider=createRazorpay(config),sendEmail}) {
+export function createSheetsApp({config,store=createSheetStore(config),provider=createRazorpay(config),sendEmail,sendInvitation}) {
   const cookieName=config.secure ? '__Host-tootica_session' : 'tootica_session';
   const invitations=config.invitations || {required:false,adminKey:''};
   const reference=()=>`TOOTICA-${config.environment==='test'?'TEST':'REG'}-${new Date().toISOString().slice(0,10).replaceAll('-','')}-${randomBytes(5).toString('hex').toUpperCase()}`;
@@ -121,15 +121,23 @@ export function createSheetsApp({config,store=createSheetStore(config),provider=
         try{body=JSON.parse(raw);}catch{check(false,400,'Invalid JSON.');}
         check(body && typeof body==='object' && !Array.isArray(body),400,'Invalid request.');
       }
-      if(path==='/api/payments/admin/invitations' && request.method==='GET') return json(200,{environment:config.environment,invitations:await store('invitation-list')});
+      if(path==='/api/payments/admin/invitations' && request.method==='GET') return json(200,{environment:config.environment,invitationEmail:{enabled:emailEnabled,reason:!config.email.enabled?'disabled':config.environment==='test' && !config.email.allowTest?'test-disabled':null},invitations:await store('invitation-list')});
       if(path==='/api/payments/admin/invitations' && request.method==='POST') {
         const email=normalizeEmail(body.email),name=typeof body.name==='string'?body.name.trim():'';
         check(email && name && name.length<=120 && !/[\u0000-\u001f\u007f]/.test(name),400,'Enter the client name and a valid email address.');
         check(Number.isInteger(body.days) && body.days>=1 && body.days<=7,400,'Invitation expiry must be between 1 and 7 days.');
         check(Number.isSafeInteger(config.registrationAmount),503,'Configure the registration price first.');
         const invitationToken=randomBytes(32).toString('base64url');
-        const invitation=await store('invitation-create',{id:randomUUID(),reference:reference(),amount:config.registrationAmount,name,email,days:body.days,invitationHash:hash(invitationToken)});
-        return json(201,{invitation,url:config.origin+'/#invite='+invitationToken});
+        let invitation=await store('invitation-create',{id:randomUUID(),reference:reference(),amount:config.registrationAmount,name,email,days:body.days,invitationHash:hash(invitationToken),sendEmail:emailEnabled});
+        const url=config.origin+'/#invite='+invitationToken;
+        let emailDelivery=emailEnabled?'unavailable':'disabled';
+        if(emailEnabled && invitation.emailDelivery==='sending') {
+          try{await (sendInvitation || createInvitationSender(config))(invitation,url);emailDelivery='sent';}
+          catch(error){emailDelivery=error.definitive===true?'failed':'review';}
+          try{invitation=await store('invitation-mail-finish',{id:invitation.id,status:emailDelivery});}
+          catch{emailDelivery='review';}
+        }
+        return json(201,{invitation,url,emailDelivery});
       }
       if(path==='/api/payments/admin/invitations/revoke' && request.method==='POST') {
         check(typeof body.id==='string' && /^[a-f0-9-]{36}$/.test(body.id),400,'Invalid invitation.');
