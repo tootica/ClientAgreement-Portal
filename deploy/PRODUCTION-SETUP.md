@@ -61,12 +61,6 @@ For passwords and keys, copy the actual value directly from your private local f
 
 Keep `MERCHANT_NAME`, `PAYMENT_DESCRIPTION` and `AGREEMENT_VERSION` consistent with `.env.example`. `EMAIL_REPLY_TO` and `INVOICE_TAX_ID` are optional. Leave `INVOICE_FONT_PATH` empty to use built-in PDF fonts; a local Windows path is unavailable in Netlify Functions. If an older function runtime is pinned, set `AWS_LAMBDA_JS_RUNTIME=nodejs24.x` in Netlify's UI. Redeploy after changing runtime variables.
 
-### Secrets scanning
-
-Netlify scans repository files and build output for values matching environment variables marked as secrets. Public settings such as the merchant name, agreement version, sender address, SMTP hostname, prices and feature flags also appear intentionally in source, examples or browser assets. `netlify.toml` excludes only these non-sensitive environment variable names with `SECRETS_SCAN_OMIT_KEYS` under `[build.environment]`. Keep their values non-sensitive.
-
-Credential scanning remains enabled across all paths, including tests and documentation. Do not exclude payment secrets, SMTP credentials, the Sheets store secret or the invitation admin key. If a deploy still fails, inspect the detection entries above the final error in the deploy log for the exact variable name and file location. Remove any exposed credential and rotate it with its provider before redeploying; do not disable scanning to bypass the failure.
-
 Use separate test credentials for deploy previews. Follow [GOOGLE-SHEETS-SETUP.md](GOOGLE-SHEETS-SETUP.md) to deploy the latest `Code.gs` and `State.gs` and configure the live ledger. Do not have multiple Apps Script projects writing the same environment tab. The same Apps Script endpoint and secret can serve test and live in separate tabs, matching the current shared configuration.
 
 ### Client invitations
