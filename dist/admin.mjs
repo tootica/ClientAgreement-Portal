@@ -10,9 +10,15 @@ const link=document.getElementById('invitation-link');
 function notice(message,error=false){status.textContent=message;status.classList.toggle('is-error',error);}
 function lock(){credential='';content.hidden=true;logout.hidden=true;login.hidden=false;result.hidden=true;link.value='';document.getElementById('invitation-list').replaceChildren();createForm.reset();document.getElementById('admin-key').value='';}
 async function api(path='',body){
-  const response=await fetch('/api/payments/admin/invitations'+path,{method:body===undefined?'GET':'POST',cache:'no-store',credentials:'omit',redirect:'error',headers:{Authorization:'Bearer '+credential,...(body===undefined?{}:{'Content-Type':'application/json'})},...(body===undefined?{}:{body:JSON.stringify(body)}),signal:AbortSignal.timeout(20000)});
-  const data=await response.json();
-  if(!response.ok){if(response.status===401)lock();throw new Error(data.error || 'Could not complete this request.');}
+  const response=await fetch('/api/payments/admin/invitations'+path,{method:body===undefined?'GET':'POST',cache:'no-store',credentials:'same-origin',redirect:'error',headers:{Authorization:'Bearer '+credential,...(body===undefined?{}:{'Content-Type':'application/json'})},...(body===undefined?{}:{body:JSON.stringify(body)}),signal:AbortSignal.timeout(20000)});
+  if(!response.headers.get('content-type')?.includes('application/json')){
+    if(response.status===401 || response.status===403)throw new Error('Site access was blocked by the hosting provider. Sign in to Netlify site access, or ask the site owner to check Visitor access settings.');
+    throw new Error('The invitation service returned an unexpected response (HTTP '+response.status+'). Please check Netlify function logs or contact the site owner.');
+  }
+  let data;
+  try{data=await response.json();}catch{throw new Error('The invitation service returned an invalid response. Please try again or check Netlify function logs.');}
+  if(!response.ok){if(response.status===401)lock();throw new Error(typeof data?.error==='string'?data.error:'Could not complete this request.');}
+  if(!data || typeof data!=='object')throw new Error('The invitation service returned an invalid response.');
   return data;
 }
 async function run(work){

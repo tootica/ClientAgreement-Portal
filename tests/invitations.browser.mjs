@@ -24,6 +24,27 @@ try{
   assert.equal(await client.locator('#main').isVisible(),true);
   assert.equal(await client.locator('#agreement-form').evaluate(form=>form.inert),true);
   await admin.goto(config.origin+'/admin.html');
+  // Hosting errors are plain text/HTML, not application JSON.
+  await admin.route('**/api/payments/admin/invitations',route=>route.fulfill({status:502,contentType:'text/plain',body:'Error - Request failed'}));
+  await admin.locator('#admin-key').fill(adminKey);
+  await admin.locator('#admin-login button').click();
+  await admin.waitForFunction(()=>document.querySelector('#admin-status').textContent.includes('HTTP 502'));
+  assert.doesNotMatch(await admin.locator('#admin-status').innerText(),/Unexpected token|not valid JSON/);
+  await admin.unroute('**/api/payments/admin/invitations');
+  await admin.route('**/api/payments/admin/invitations',route=>route.fulfill({status:401,contentType:'text/html',body:'<html>Login Redirect</html>'}));
+  await admin.locator('#admin-login button').click();
+  await admin.waitForFunction(()=>document.querySelector('#admin-status').textContent.includes('Site access was blocked'));
+  await admin.unroute('**/api/payments/admin/invitations');
+  await admin.route('**/api/payments/admin/invitations',route=>route.fulfill({status:200,contentType:'application/json',body:'invalid JSON'}));
+  await admin.locator('#admin-login button').click();
+  await admin.waitForFunction(()=>document.querySelector('#admin-status').textContent.includes('invalid response'));
+  await admin.unroute('**/api/payments/admin/invitations');
+  await adminContext.addCookies([{name:'hosting-access-test',value:'signed-in',url:config.origin}]);
+  await admin.route('**/api/payments/admin/invitations**',async route=>{
+    const headers=await route.request().allHeaders();
+    assert.match(headers.cookie || '',/hosting-access-test=signed-in/);
+    await route.continue();
+  });
   await admin.locator('#admin-key').fill('wrong-admin-key-'.repeat(3));
   await admin.locator('#admin-login button').click();
   await admin.waitForFunction(()=>document.querySelector('#admin-status').textContent.includes('denied'));
@@ -72,5 +93,5 @@ try{
   assert.equal(await admin.locator('#invitation-link').inputValue(),'');
   await admin.reload();assert.equal(await admin.locator('#admin-content').isVisible(),false);
   assert.deepEqual(errors,[]);
-  console.log('Invitation browser checks passed: admin auth, create, public gate, invited email, one browser, revocation, logout and mobile layout.');
+  console.log('Invitation browser checks passed: hosting error handling, access cookies, admin auth, create, public gate, invited email, one browser, revocation, logout and mobile layout.');
 }finally{await browser?.close();await new Promise(resolve=>{server.close(resolve);server.closeAllConnections();});}

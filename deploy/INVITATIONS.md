@@ -32,3 +32,11 @@ The admin list shows pending, opened, expired, revoked, checkout started, or com
 - Do not manually edit invitation rows in Google Sheets. Rotate the admin key in Netlify and redeploy if staff access needs to be removed; old keys then stop working on subsequent API requests.
 
 Automated tests simulate providers and Sheets. Before live use, verify a hosted invitation, missing/expired/revoked link, successful test payment, retry, invoice download and email delivery.
+
+## Netlify site access and admin errors
+
+If the admin page reports that hosting access was blocked, check Netlify's **Project configuration > General > Visitor access**. Team-login or private-project protection applies before this application's admin authentication. Sign in to that Netlify access screen when testing a protected deployment. The admin API includes same-origin cookies so the existing hosting-access session can be sent.
+
+When launching for clients, production must be reachable without requiring clients to join your Netlify team. Adjust production project visibility/protection accordingly; previews can remain private. Keep `INVITATIONS_REQUIRED=true` and `INVITATION_ADMIN_KEY` configured to protect registration and admin actions inside the app. See [Netlify visitor access documentation](https://docs.netlify.com/manage/security/secure-access-to-sites/project-visibility/).
+
+If a non-JSON HTTP 500/502 error remains after hosting access is resolved, inspect the `payments` function logs for that request. A hosting/runtime failure is different from an invalid admin key, which this application returns as a JSON error.
