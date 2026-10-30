@@ -19,7 +19,7 @@ export async function requestPayment(config, path, body, idempotencyKey) {
     signal: AbortSignal.timeout(20000)
   });
   if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) {
-    let message = 'Payment service unavailable. Please try again or contact Tootica.';
+    let message = 'Payment service unavailable. Please try again or contact support@tootica.com.';
     if (response.headers.get('content-type')?.includes('application/json')) {
       try {
         const body = await response.json();

@@ -21,7 +21,7 @@ export function createRazorpay(config, client) {
     try {return await operation(sdk());}
     catch (cause) {
       // Never expose the SDK error object: it can contain authentication/request data.
-      const error = new Error(cause?.statusCode === 401 || cause?.statusCode === 403 ? 'Payment provider authentication failed. Please contact Tootica.' : 'Payment provider request failed. Please try again or contact Tootica.');
+      const error = new Error(cause?.statusCode === 401 || cause?.statusCode === 403 ? 'Payment provider authentication failed. Please contact support@tootica.com.' : 'Payment provider request failed. Please try again or contact support@tootica.com.');
       error.status = cause?.statusCode === 401 || cause?.statusCode === 403 ? 401 : 500;
       error.orderNotCreated = [400, 401, 403, 422, 429].includes(cause?.statusCode);
       throw error;

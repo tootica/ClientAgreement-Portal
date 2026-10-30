@@ -14,7 +14,7 @@ export function createSheetStore(config, fetcher = fetch) {
       result=await response.json();
     } catch {const error=new Error('Payment records are temporarily unavailable. Please retry; do not make another payment.');error.status=503;throw error;}
     if (result.ok!==true) {
-      const error=new Error(result.status>=400 && result.status<500 && typeof result.error==='string' ? result.error : 'Payment records are temporarily unavailable. Please contact Tootica.');
+      const error=new Error(result.status>=400 && result.status<500 && typeof result.error==='string' ? result.error : 'Payment records are temporarily unavailable. Please contact support@tootica.com.');
       error.status=Number.isInteger(result.status) && result.status>=400 && result.status<=599 ? result.status : 503;throw error;
     }
     return result.value;

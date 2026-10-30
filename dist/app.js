@@ -10,6 +10,15 @@ if (invoiceToken || invitationToken) history.replaceState(null, '', location.pat
 window.addEventListener('hashchange',()=>{if(new URLSearchParams(location.hash.slice(1)).has('invite'))location.reload();});
 import {createSignatureAnimation} from './signature-animation.mjs?v=42d5516fc8cd';
 
+function setSupportText(element, message) {
+  const parts=message.split('support@tootica.com');
+  element.replaceChildren();
+  parts.forEach((part,index)=>{
+    if(index){const link=document.createElement('a');link.href='mailto:support@tootica.com';link.textContent='support@tootica.com';element.append(link);}
+    element.append(document.createTextNode(part));
+  });
+}
+
 const sections = [...document.querySelectorAll('.terms-content section')];
 const tocLinks = [...document.querySelectorAll('.toc-links a')];
 const iconPaths = [
@@ -167,7 +176,7 @@ agreementForm.inert = true;
 function showInvitationNotice(message) {
   detailsStage.hidden=true;packageStage.hidden=true;termsStage.hidden=true;paymentStage.hidden=true;confirmationStage.hidden=true;paymentErrorStage.hidden=true;navbarSearch.hidden=true;
   invitationStage.hidden=false;
-  document.getElementById('invitation-message').textContent=message;
+  setSupportText(document.getElementById('invitation-message'),message);
   document.querySelector('.hero-title h1').textContent='Client invitation';
   document.querySelector('.hero-title p').textContent='Registration for invited Tootica clients.';
   document.querySelector('.skip-link').setAttribute('href','#invitation-stage');
@@ -402,7 +411,7 @@ function renderConfirmationEmail(result) {
   document.getElementById('confirmation-email-heading').textContent = state.title;
   document.getElementById('confirmation-email-message').textContent = state.message;
   document.getElementById('confirmation-email').textContent = result.customerEmail || '';
-  document.getElementById('confirmation-email-hint').textContent = state.hint;
+  setSupportText(document.getElementById('confirmation-email-hint'),state.hint);
   document.getElementById('confirmation-email-badge').textContent = state.badge;
   document.getElementById('confirmation-email-panel').classList.toggle('is-sent', result.emailDelivery === 'sent');
   emailStatusButton.hidden = !state.canCheck;
@@ -437,9 +446,9 @@ window.addEventListener('pagehide', () => clearTimeout(emailPollTimer));
 window.addEventListener('pageshow', () => {if (paid && confirmedPayment?.emailDelivery === 'pending') renderConfirmationEmail(confirmedPayment);});
 
 function updatePaymentStatus(message, isError = false) {
-  paymentStatus.textContent = message;
+  setSupportText(paymentStatus,message);
   paymentStatus.classList.toggle('is-error', isError);
-  if (!paymentErrorStage.hidden) document.getElementById('payment-error-message').textContent = message;
+  if (!paymentErrorStage.hidden) setSupportText(document.getElementById('payment-error-message'),message);
 }
 function showPaymentError(title, message) {
   if (paid) return;
@@ -463,8 +472,8 @@ function showPaymentError(title, message) {
 }
 function paymentPendingMessage(result) {
   if (result.reason === 'authorized') return 'Your payment has been authorised and is awaiting final confirmation. Please do not pay again; check its status shortly.';
-  if (result.reason === 'refunded' || result.status === 'review') return 'This payment needs a billing review. Please contact Tootica with your invoice reference before paying again.';
-  return 'Payment is still awaiting confirmation. Please check again or contact Tootica with your invoice reference.';
+  if (result.reason === 'refunded' || result.status === 'review') return 'This payment needs a billing review. Please contact support@tootica.com with your invoice reference before paying again.';
+  return 'Payment is still awaiting confirmation. Please check again or contact support@tootica.com with your invoice reference.';
 }
 function setPaymentBusy(value) {
   busy = value;
@@ -600,7 +609,7 @@ async function openGatewayCheckout() {
     checkout.on('payment.failed', () => {
       if (paid) return;
       awaitingVerification = true;
-      showPaymentError('Payment unsuccessful', 'Your payment attempt was unsuccessful. Check payment status before trying again. If money was debited, contact Tootica with your invoice reference.');
+      showPaymentError('Payment unsuccessful', 'Your payment attempt was unsuccessful. Check payment status before trying again. If money was debited, contact support@tootica.com with your invoice reference.');
       checkout.close();
     });
     checkout.open();
@@ -608,7 +617,7 @@ async function openGatewayCheckout() {
     // Remain busy for the entire modal lifetime.
     return;
   } catch (error) {
-    showPaymentError('Unable to complete payment', error.status ? error.message : 'Checkout is unavailable. Please try again or contact Tootica. No payment has been confirmed.');
+    showPaymentError('Unable to complete payment', error.status ? error.message : 'Checkout is unavailable. Please try again or contact support@tootica.com. No payment has been confirmed.');
     setPaymentBusy(false);
   } finally {
     if (awaitingVerification || paid) setPaymentBusy(false);
@@ -633,9 +642,9 @@ async function initializePayments() {
     paymentConfig = validateConfig(await response.json());
     if (invoiceToken) await requestPayment(paymentConfig, '/session', {token:invoiceToken});
     if (!paymentConfig.enabled) {
-      if(paymentConfig.invitationRequired) showInvitationNotice('Open your invitation link to register. Registration is currently unavailable; please contact Tootica.');
+      if(paymentConfig.invitationRequired) showInvitationNotice('Open your invitation link to register. Registration is currently unavailable; please contact support@tootica.com.');
       else detailsForm.inert=false;
-      updatePaymentStatus('Online payments are not available yet. Please contact Tootica for payment instructions.');
+      updatePaymentStatus('Online payments are not available yet. Please contact support@tootica.com for payment instructions.');
     } else {
       if (!invoiceToken) {
         const startSession = () => requestPayment(paymentConfig, '/session', invitationToken ? {invitationToken} : {});
@@ -659,9 +668,9 @@ async function initializePayments() {
       updatePaymentStatus(paymentConfig.environment === 'test' ? 'Test checkout — no live payment will be collected.' : 'Review your invoice, then continue to secure checkout.');
     }
   } catch (error) {
-    if(paymentConfig?.invitationRequired || invitationToken) showInvitationNotice(error.status ? error.message : 'Your invitation could not be checked. Reload this page or contact Tootica.');
+    if(paymentConfig?.invitationRequired || invitationToken) showInvitationNotice(error.status ? error.message : 'Your invitation could not be checked. Reload this page or contact support@tootica.com.');
     paymentConfig = null;
-    updatePaymentStatus(error.status ? error.message : 'Online payments are temporarily unavailable. Please reload this page or contact Tootica for help.', true);
+    updatePaymentStatus(error.status ? error.message : 'Online payments are temporarily unavailable. Please reload this page or contact support@tootica.com for help.', true);
   }
   setPaymentBusy(false);
 }

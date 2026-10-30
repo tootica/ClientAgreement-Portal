@@ -67,7 +67,7 @@ export function createSheetsApp({config,store=createSheetStore(config),provider=
     if(prepared.action==='existing') return orderResponse(r);
     if(prepared.action==='reconcile') {
       const matches=await provider.findOrdersByReceipt(r.id);
-      check(matches.length===1,409,'The previous checkout could not be confirmed yet. Please contact Tootica with your invoice reference.');
+      check(matches.length===1,409,'The previous checkout could not be confirmed yet. Please contact support@tootica.com with your invoice reference.');
       const recovered=matches[0];
       check(orderPattern.test(recovered?.id || '') && recovered.receipt===r.id && recovered.amount===r.amount && recovered.currency===r.currency,409,'The previous order does not match this invoice.');
       return orderResponse(await store('order-complete',{id:r.id,newOrderId:recovered.id}));
@@ -88,7 +88,7 @@ export function createSheetsApp({config,store=createSheetStore(config),provider=
       if(path==='/payment-config.json' && request.method==='GET') return json(200,{enabled:config.enabled && Boolean(config.sheetStore.url && config.sheetStore.secret),invitationRequired:invitations.required,environment:config.environment,provider:'razorpay',apiBase:'/api/payments',merchantName:config.merchantName,description:config.description,logo:'assets/tootica-logo.png',agreementVersion:config.agreementVersion,keyFingerprint:config.keyId?hash(config.keyId).slice(0,12):null});
       check(path.startsWith('/api/payments/'),404,'Endpoint not found.');
       // No paid or unpaid API access until a durable ledger has been configured.
-      check(config.sheetStore.url && config.sheetStore.secret,503,'Google Sheets storage is not configured. Please contact Tootica.');
+      check(config.sheetStore.url && config.sheetStore.secret,503,'Google Sheets storage is not configured. Please contact support@tootica.com.');
       let raw='';
       if(request.method==='POST') {
         check(Number(request.headers.get('content-length') || 0)<=65536,413,'Request too large.');
@@ -150,7 +150,7 @@ export function createSheetsApp({config,store=createSheetStore(config),provider=
       check(sessionHash,401,'Your registration session has expired. Reload this page to continue.');
       const r=await store('get',{sessionHash});
       if(invitations.required && !r.invitation_hash && !r.order_id) check(false,403,'An invitation is required. Please use the link sent by Tootica.');
-      check(!r.invitation_revoked,403,'This invitation was revoked. Please contact Tootica.');
+      check(!r.invitation_revoked,403,'This invitation was revoked. Please contact support@tootica.com.');
       if(path==='/api/payments/summary' && request.method==='GET') return json(200,{amount:r.amount,currency:r.currency,reference:r.reference,invitedEmail:r.invitation_email || null,invitedName:r.invitation_name || null,packageId:r.package_id,packageName:packageName(r.package_id),clientDetails:r.client_details?JSON.parse(r.client_details):null,detailsLocked:Boolean(r.client_details),...(r.state==='paid'?{payment:paidResponse(r),order:orderResponse(r)}:{})});
       if(path==='/api/payments/orders' && request.method==='POST') return json(200,await createOrder(r,request,body,sessionHash));
       if(path==='/api/payments/verify' && request.method==='POST') {
@@ -167,7 +167,7 @@ export function createSheetsApp({config,store=createSheetStore(config),provider=
         return new Response(new Uint8Array(pdf),{headers:{...headers,'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="invoice-'+r.reference.replace(/[^A-Za-z0-9_-]/g,'_')+'.pdf"'}});
       }
       return json(404,{error:'Endpoint not found.'});
-    } catch(error) {return json(error.status || 502,{error:error.status?error.message:'Payment service unavailable. Please contact Tootica.'});}
+    } catch(error) {return json(error.status || 502,{error:error.status?error.message:'Payment service unavailable. Please contact support@tootica.com.'});}
   }
   return {handle,async runDeliveries(limit=5) {
     if(!emailEnabled) return 0;

@@ -4,7 +4,7 @@
 
 Welcome to Tootica, your partner in managing your dental practice. This Client Agreement outlines your selected subscription and the installation, onboarding, training and support services included in your agreed scope. Read it alongside your quotation, subscription order and supporting documents for a clear understanding of the features, fees, responsibilities and implementation arrangements that apply to your clinic. Together, these documents explain what your clinic can expect from Tootica and how we will work with your team to get started.
 
-Check your clinic details, selected plan and authorised contacts before accepting. Contact Tootica for clarification and ensure any agreed changes are documented in writing.
+Check your clinic details, selected plan and authorised contacts before accepting. Contact [support@tootica.com](mailto:support@tootica.com) for clarification and ensure any agreed changes are documented in writing.
 
 ## About Tootica
 

@@ -6,7 +6,7 @@ export function applySheetAction(records, action, p, now = Date.now()) {
   const invitationView = row => ({id:row.id,reference:row.reference,name:row.invitation_name,email:row.invitation_email,createdAt:row.created_at,expiresAt:row.invitation_expires,
     status:row.state==='paid'?'completed':row.invitation_revoked?'revoked':row.order_id || row.state==='creating'?'checkout started':row.invitation_expires<=now?'expired':row.sessions.length?'opened':'pending'});
   function newRecord() {
-    check(records.length<2000,503,'Registration capacity needs review. Please contact Tootica.');
+    check(records.length<2000,503,'Registration capacity needs review. Please contact support@tootica.com.');
     return {id:p.id,reference:p.reference,amount:p.amount,currency:'INR',environment:p.environment,created_at:now,expires_at:now+7*86400000,
       sessions:[],state:'new',package_id:'essential',attempts:{},email_status:'pending',email_attempts:0};
   }
@@ -32,16 +32,16 @@ export function applySheetAction(records, action, p, now = Date.now()) {
     if (p.invitationHash) {
       const invite=records.find(r=>r.environment===p.environment && r.invitation_hash===p.invitationHash);
       if(invite && row && row.id===invite.id && row.state==='paid') return row;
-      check(invite && invitationOpen(invite),403,'This invitation is invalid, expired or revoked. Please contact Tootica for a new link.');
+      check(invite && invitationOpen(invite),403,'This invitation is invalid, expired or revoked. Please contact support@tootica.com for a new link.');
       check(invite.state!=='paid',409,'This invitation has already been completed. Use the original browser to download your invoice.');
       if(row && row.id===invite.id) return row;
-      check(invite.sessions.length===0,409,'This invitation has already been opened in another browser. Continue there or contact Tootica for a new link.');
+      check(invite.sessions.length===0,409,'This invitation has already been opened in another browser. Continue there or contact support@tootica.com for a new link.');
       invite.sessions=[{hash:p.newSessionHash,expires:Math.min(now+12*3600000,invite.invitation_expires)}];
       return invite;
     }
     if (row) {
       check(!p.invitationRequired || row.invitation_hash || row.state==='paid',403,'An invitation is required. Please use the link sent by Tootica.');
-      check(!row.invitation_hash || invitationOpen(row) || row.order_id || row.state==='paid',403,'This invitation has expired or was revoked. Please contact Tootica.');
+      check(!row.invitation_hash || invitationOpen(row) || row.order_id || row.state==='paid',403,'This invitation has expired or was revoked. Please contact support@tootica.com.');
       if (!row.invitation_hash && row.state==='new' && !row.client_details) row.amount=p.amount;
       return row;
     }
@@ -58,25 +58,25 @@ export function applySheetAction(records, action, p, now = Date.now()) {
   if (action==='prepare') {
     check(!p.invitationRequired || r.invitation_hash,403,'An invitation is required.');
     if(r.invitation_hash) {
-      check(!r.invitation_revoked,403,'This invitation was revoked. Please contact Tootica.');
-      check(r.order_id || r.state==='creating' || invitationOpen(r),403,'This invitation has expired. Please contact Tootica.');
+      check(!r.invitation_revoked,403,'This invitation was revoked. Please contact support@tootica.com.');
+      check(r.order_id || r.state==='creating' || invitationOpen(r),403,'This invitation has expired. Please contact support@tootica.com.');
       check(r.invitation_email===p.email,400,'Use the email address this invitation was issued to.');
     }
-    check(!r.client_details || r.client_details===p.clientDetails,409,'Billing details are already recorded. Please contact Tootica to correct them.');
+    check(!r.client_details || r.client_details===p.clientDetails,409,'Billing details are already recorded. Please contact support@tootica.com to correct them.');
     check(!r.customer_email || (r.customer_email===p.email && r.customer_name===p.name),409,'Invoice contact details are already recorded.');
     check(!r.attempts[p.key] || r.attempts[p.key]===p.fingerprint,409,'Idempotency key was already used for different details.');
-    check(r.attempts[p.key] || Object.keys(r.attempts).length<20,429,'Too many checkout attempts. Please contact Tootica.');
+    check(r.attempts[p.key] || Object.keys(r.attempts).length<20,429,'Too many checkout attempts. Please contact support@tootica.com.');
     r.attempts[p.key]=p.fingerprint; r.client_details=p.clientDetails; r.customer_name=p.name; r.customer_email=p.email;
     if (!r.acceptance) r.acceptance = {name:p.name,email:p.email,version:p.version,accepted_at:now};
     if (r.order_id) return {invoice:r,action:'existing'};
     if (r.state==='creating') return {invoice:r,action:'reconcile'};
-    check(r.state==='new',409,'Order creation needs reconciliation. Please contact Tootica.');
+    check(r.state==='new',409,'Order creation needs reconciliation. Please contact support@tootica.com.');
     r.state='creating'; r.claim=p.claim; return {invoice:r,action:'create'};
   }
   if (action==='order-complete') {
     check(!r.order_id || r.order_id===p.newOrderId,409,'Invoice order changed. Please check payment status.');
     check(!records.some(other=>other.id!==r.id && other.order_id===p.newOrderId),409,'Order already belongs to another registration.');
-    check(r.state==='creating' || r.order_id===p.newOrderId,409,'Order state changed. Please contact Tootica.');
+    check(r.state==='creating' || r.order_id===p.newOrderId,409,'Order state changed. Please contact support@tootica.com.');
     r.order_id=p.newOrderId; if(r.state!=='paid') r.state='created'; return r;
   }
   if (action==='order-rejected') {
