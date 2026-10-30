@@ -167,6 +167,14 @@ try {
   assert.equal(await page.locator('#check-email-status').isVisible(),false);
   assert.equal(await page.locator('.progress-step[aria-current=step] .step-label').innerText(),'Done');
   assert.equal(await page.locator('#download-invoice').isVisible(),true);
+  let releaseInvoice;const invoiceWait=new Promise(resolve=>{releaseInvoice=resolve;});
+  await page.route('**/api/payments/invoice',async route=>{await invoiceWait;await route.continue();});
+  const downloadWait=page.waitForEvent('download');
+  await page.locator('#download-invoice').click();
+  assert.equal(await page.locator('#request-preloader').isVisible(),true);
+  releaseInvoice();
+  const download=await downloadWait;assert.match(download.suggestedFilename(),/^invoice-.*\.pdf$/);
+  await page.waitForFunction(()=>document.querySelector('#request-preloader').hidden);
   assert.equal(await page.locator('#confirmation-package').innerText(),'Essential');
   assert.equal(await page.locator('#confirmation-period-row').isVisible(),true);
   await page.evaluate(()=>{document.activeElement?.blur();window.scrollTo({top:0,behavior:'instant'});});

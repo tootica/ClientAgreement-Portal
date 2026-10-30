@@ -7,6 +7,8 @@ const logout=document.getElementById('admin-logout');
 const createForm=document.getElementById('invitation-create');
 const result=document.getElementById('invitation-result');
 const link=document.getElementById('invitation-link');
+const shell=document.getElementById('admin-shell');
+const preloader=document.getElementById('admin-preloader');
 function notice(message,error=false){status.textContent=message;status.classList.toggle('is-error',error);}
 function lock(){credential='';content.hidden=true;logout.hidden=true;login.hidden=false;result.hidden=true;link.value='';document.getElementById('invitation-list').replaceChildren();createForm.reset();document.getElementById('admin-key').value='';}
 async function api(path='',body){
@@ -21,10 +23,13 @@ async function api(path='',body){
   if(!data || typeof data!=='object')throw new Error('The invitation service returned an invalid response.');
   return data;
 }
-async function run(work){
+async function run(work,message='Loading invitations…'){
   if(busy)return;busy=true;document.querySelectorAll('button').forEach(b=>b.disabled=true);
+  const previousFocus=document.activeElement;
+  document.getElementById('admin-preloader-message').textContent=message;
+  preloader.hidden=false;shell.inert=true;shell.setAttribute('aria-busy','true');
   try{await work();}catch(error){notice(error.message || 'Could not connect. Please try again.',true);}
-  finally{busy=false;document.querySelectorAll('button').forEach(b=>{b.disabled=b.dataset.unavailable==='true';});}
+  finally{busy=false;preloader.hidden=true;shell.inert=false;shell.setAttribute('aria-busy','false');document.querySelectorAll('button').forEach(b=>{b.disabled=b.dataset.unavailable==='true';});if(previousFocus?.isConnected && previousFocus.getClientRects().length && !previousFocus.disabled)previousFocus.focus({preventScroll:true});}
 }
 async function refresh(){
   const data=await api();
@@ -38,11 +43,11 @@ async function refresh(){
   createForm.querySelector('button[type=submit]').textContent=emailReady?'Create and email invitation':'Create invitation link';
   const rows=data.invitations.map(invitation=>{
     const row=document.createElement('tr');
-    const deliveryLabels={sent:'Accepted for delivery',failed:'Not sent',review:'Check Brevo logs',sending:'Sending',disabled:'Email disabled'};
-    for(const text of [invitation.name,invitation.email,invitation.status,deliveryLabels[invitation.emailDelivery] || 'Not recorded',new Date(invitation.expiresAt).toLocaleString()]){const cell=document.createElement('td');cell.textContent=text;row.append(cell);}
+    const deliveryLabels={sent:'Sent',failed:'Not sent',review:'Not confirmed',sending:'Not confirmed',disabled:'Not sent'};
+    for(const text of [invitation.name,invitation.email,invitation.status,deliveryLabels[invitation.emailDelivery] || 'Not confirmed',new Date(invitation.expiresAt).toLocaleString()]){const cell=document.createElement('td');cell.textContent=text;row.append(cell);}
     const action=document.createElement('td'),button=document.createElement('button');
     button.type='button';button.className='secondary-button';button.textContent='Revoke';button.dataset.unavailable=String(['completed','revoked','checkout started'].includes(invitation.status));button.disabled=button.dataset.unavailable==='true';
-    button.addEventListener('click',()=>{if(confirm('Revoke the invitation for '+invitation.email+'?'))void run(async()=>{await api('/revoke',{id:invitation.id});result.hidden=true;link.value='';await refresh();notice('Invitation revoked.');});});
+    button.addEventListener('click',()=>{if(confirm('Revoke the invitation for '+invitation.email+'?'))void run(async()=>{await api('/revoke',{id:invitation.id});result.hidden=true;link.value='';await refresh();notice('Invitation revoked.');},'Revoking invitation…');});
     action.append(button);row.append(action);return row;
   });
   if(!rows.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=6;cell.textContent='No invitations yet.';row.append(cell);rows.push(row);}
@@ -66,6 +71,7 @@ createForm.addEventListener('submit',event=>{event.preventDefault();void run(asy
   const message=deliveryMessages[data.emailDelivery] || 'Invitation created, but this backend did not report email delivery. Redeploy the latest Netlify code and Apps Script State.gs; copy the link below if needed.';
   document.getElementById('invitation-delivery').textContent=message;
   await refresh();notice(message,['failed','review','unavailable'].includes(data.emailDelivery));
-});});
-document.getElementById('invitation-copy').addEventListener('click',()=>void run(async()=>{try{await navigator.clipboard.writeText(link.value);notice('Invitation link copied.');}catch{link.focus();link.select();notice('Select and copy the invitation link above.');}}));
+},'Creating and sending your invitation…');});
+document.getElementById('invitation-copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(link.value);notice('Invitation link copied.');}catch{link.focus();link.select();notice('Select and copy the invitation link above.');}});
 window.addEventListener('pagehide',lock);
+window.addEventListener('pagehide',()=>{preloader.hidden=true;shell.inert=false;shell.setAttribute('aria-busy','false');});

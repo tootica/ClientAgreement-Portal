@@ -28,7 +28,7 @@ Deploy the latest generated `State.gs` as a new Apps Script version and redeploy
 
 The email contains the client's private registration link, expiry in India Standard Time and same-browser instructions. It is not a payment receipt and has no invoice attachment. Emailing the link does not verify ownership of the address.
 
-The admin list has a separate email-delivery column. **Accepted for delivery** means SMTP accepted the intended recipient; check Brevo for bounces or inbox-delivery issues. Definite SMTP rejection shows **Not sent** and keeps the created link available to copy. A disconnect or failure to record acceptance shows **Check Brevo logs**; check the provider before sending the link again. Requests interrupted during sending become review-required after two minutes.
+The admin list's **Email sent** column shows **Sent** when SMTP accepted the intended recipient and **Not sent** when delivery was disabled or definitively rejected. **Not confirmed** covers an in-progress send, a disconnect, or a failure to record acceptance; check Brevo before sending again. SMTP acceptance does not guarantee inbox delivery. Requests interrupted during sending become review-required after two minutes. The same created link remains available to copy.
 
 Invitation emails are attempted once during creation and are not retried by the payment-email scheduler. The usable link remains only in the create response and email; the ledger stores its hash and delivery status. If a request times out, refresh the invitation list and check Brevo before creating another invitation. If you need a replacement and checkout has not started, revoke the old invitation first.
 

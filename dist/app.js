@@ -156,6 +156,16 @@ const confirmationStage = document.getElementById('confirmation-stage');
 const paymentErrorStage = document.getElementById('payment-error-stage');
 const paymentPreloader = document.getElementById('payment-preloader');
 const siteShell = document.querySelector('.site-shell');
+const pagePreloader = document.getElementById('page-preloader');
+const requestPreloader = document.getElementById('request-preloader');
+function showRequestLoading(message) {
+  document.getElementById('request-preloader-message').textContent=message;
+  requestPreloader.hidden=false;siteShell.inert=true;siteShell.setAttribute('aria-busy','true');
+}
+function hideRequestLoading() {
+  requestPreloader.hidden=true;
+  if(pagePreloader.hidden && !signingInProgress){siteShell.inert=false;siteShell.setAttribute('aria-busy','false');}
+}
 let cancelPaymentTransition = null;
 function waitForPaymentTransition() {
   return new Promise(resolve => {
@@ -444,6 +454,24 @@ async function refreshConfirmationEmail() {
 emailStatusButton.addEventListener('click', () => {void refreshConfirmationEmail();});
 window.addEventListener('pagehide', () => clearTimeout(emailPollTimer));
 window.addEventListener('pageshow', () => {if (paid && confirmedPayment?.emailDelivery === 'pending') renderConfirmationEmail(confirmedPayment);});
+let invoiceDownloadBusy=false;
+document.getElementById('download-invoice').addEventListener('click',async event=>{
+  event.preventDefault();
+  if(invoiceDownloadBusy || !paid)return;
+  invoiceDownloadBusy=true;
+  const button=event.currentTarget;
+  const notice=document.getElementById('confirmation-refresh-status');
+  button.setAttribute('aria-busy','true');button.setAttribute('aria-disabled','true');
+  showRequestLoading('Preparing your invoice…');
+  try{
+    const response=await fetch(button.href,{credentials:'same-origin',cache:'no-store',redirect:'error',signal:AbortSignal.timeout(20000)});
+    if(!response.ok || !response.headers.get('content-type')?.includes('application/pdf'))throw new Error('Invoice unavailable');
+    const url=URL.createObjectURL(await response.blob());
+    const download=document.createElement('a');download.href=url;download.download='invoice-'+(confirmedPayment?.reference || 'tootica').replace(/[^A-Za-z0-9_-]/g,'_')+'.pdf';
+    download.click();setTimeout(()=>URL.revokeObjectURL(url),5000);notice.textContent='';
+  }catch{setSupportText(notice,'We could not download your invoice. Please try again or contact support@tootica.com.');}
+  finally{invoiceDownloadBusy=false;button.setAttribute('aria-busy','false');button.removeAttribute('aria-disabled');hideRequestLoading();button.focus({preventScroll:true});}
+});
 
 function updatePaymentStatus(message, isError = false) {
   setSupportText(paymentStatus,message);
@@ -452,6 +480,7 @@ function updatePaymentStatus(message, isError = false) {
 }
 function showPaymentError(title, message) {
   if (paid) return;
+  hideRequestLoading();
   detailsStage.hidden = true; packageStage.hidden = true; termsStage.hidden = true;
   paymentStage.hidden = true; confirmationStage.hidden = true; navbarSearch.hidden = true;
   paymentErrorStage.hidden = false;
@@ -477,6 +506,7 @@ function paymentPendingMessage(result) {
 }
 function setPaymentBusy(value) {
   busy = value;
+  if(!value) hideRequestLoading();
   paymentButton.disabled = value || paid || !paymentConfig?.enabled;
   paymentBackButton.disabled = value || paid || awaitingVerification;
   document.querySelectorAll('[data-edit-details]').forEach(button => {button.disabled = value || paid || awaitingVerification; button.textContent = detailsLocked ? 'View details' : 'Edit details';});
@@ -511,6 +541,7 @@ function ensurePaymentScript() {
 }
 function confirmPayment(result) {
   if (!isConfirmedPayment(result, activeOrder)) return false;
+  hideRequestLoading();
   paymentErrorStage.hidden = true;
   paid = true;
   document.body.classList.add('is-payment-stage');
@@ -543,6 +574,7 @@ function confirmPayment(result) {
 async function verifyPayment(response) {
   awaitingVerification = true;
   setPaymentBusy(true);
+  showRequestLoading('Confirming your payment…');
   updatePaymentStatus('Confirming your payment. Please keep this page open.');
   try {
     const result = await requestPayment(paymentConfig, '/verify', {orderId:activeOrder.orderId, ...response});
@@ -555,6 +587,7 @@ async function openGatewayCheckout() {
   if (busy || paid || !paymentConfig?.enabled) return;
   if (!clientDetails || !agreementConsent.checked || !signatureInput.value.trim() || !emailInput.value.trim() || !emailInput.validity.valid) {showAgreementStage(false); return;}
   setPaymentBusy(true);
+  showRequestLoading(awaitingVerification?'Checking payment status…':'Preparing secure checkout…');
   try {
     if (awaitingVerification) {
       const result = await requestPayment(paymentConfig, '/orders/' + encodeURIComponent(activeOrder.orderId));
@@ -612,6 +645,7 @@ async function openGatewayCheckout() {
       showPaymentError('Payment unsuccessful', 'Your payment attempt was unsuccessful. Check payment status before trying again. If money was debited, contact support@tootica.com with your invoice reference.');
       checkout.close();
     });
+    hideRequestLoading();
     checkout.open();
     updatePaymentStatus('Complete your payment in secure checkout.');
     // Remain busy for the entire modal lifetime.
@@ -636,11 +670,13 @@ paymentErrorAgreement.addEventListener('click', () => {
   if (!busy && !paid) showAgreementStage(false);
 });
 async function initializePayments() {
+  let sessionResult;
   try {
     const response = await fetch('./payment-config.json', {cache:'no-store', signal:AbortSignal.timeout(10000)});
     if (!response.ok) throw new Error('Settings unavailable');
     paymentConfig = validateConfig(await response.json());
-    if (invoiceToken) await requestPayment(paymentConfig, '/session', {token:invoiceToken});
+    document.querySelector('#page-preloader p').textContent=paymentConfig.invitationRequired?'Checking your invitation…':'Loading your registration…';
+    if (invoiceToken) sessionResult=await requestPayment(paymentConfig, '/session', {token:invoiceToken});
     if (!paymentConfig.enabled) {
       if(paymentConfig.invitationRequired) showInvitationNotice('Open your invitation link to register. Registration is currently unavailable; please contact support@tootica.com.');
       else detailsForm.inert=false;
@@ -649,10 +685,10 @@ async function initializePayments() {
       if (!invoiceToken) {
         const startSession = () => requestPayment(paymentConfig, '/session', invitationToken ? {invitationToken} : {});
         // Serialize first visits in cooperating tabs so they share the HttpOnly session.
-        if (navigator.locks?.request) await navigator.locks.request('tootica-registration-session', startSession);
-        else await startSession();
+        if (navigator.locks?.request) sessionResult=await navigator.locks.request('tootica-registration-session', startSession);
+        else sessionResult=await startSession();
       }
-      const summary = await requestPayment(paymentConfig, '/summary');
+      const summary = sessionResult?.summary || await requestPayment(paymentConfig, '/summary');
       invitationToken=null;
       invitedEmail=summary.invitedEmail || '';
       if(invitedEmail) {emailInput.value=invitedEmail;emailInput.readOnly=true;document.getElementById('client-contact').value=summary.invitedName || '';}
@@ -668,11 +704,16 @@ async function initializePayments() {
       updatePaymentStatus(paymentConfig.environment === 'test' ? 'Test checkout — no live payment will be collected.' : 'Review your invoice, then continue to secure checkout.');
     }
   } catch (error) {
-    if(paymentConfig?.invitationRequired || invitationToken) showInvitationNotice(error.status ? error.message : 'Your invitation could not be checked. Reload this page or contact support@tootica.com.');
+    showInvitationNotice(error.status ? error.message : 'Registration could not be checked. Reload this page or contact support@tootica.com.');
     paymentConfig = null;
     updatePaymentStatus(error.status ? error.message : 'Online payments are temporarily unavailable. Please reload this page or contact support@tootica.com for help.', true);
   }
-  setPaymentBusy(false);
+  finally {
+    pagePreloader.hidden=true;document.body.classList.remove('is-initializing');
+    siteShell.inert=false;siteShell.setAttribute('aria-busy','false');
+    setPaymentBusy(false);
+    if(!invitationStage.hidden)invitationStage.focus({preventScroll:true});
+  }
 }
 initializePayments();
 updateAgreementRequirements();

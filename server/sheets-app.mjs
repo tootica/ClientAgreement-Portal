@@ -18,6 +18,7 @@ export function createSheetsApp({config,store=createSheetStore(config),provider=
   const sender=sendEmail || (emailEnabled ? createEmailSender(config) : null);
   function orderResponse(r) {return {order_id:r.order_id,orderId:r.order_id,keyId:config.keyId,amount:r.amount,currency:r.currency,reference:r.reference,customerEmail:r.customer_email,packageId:r.package_id,packageName:packageName(r.package_id)};}
   function paidResponse(r) {return {status:'paid',orderId:r.order_id,paymentId:r.payment_id,amount:r.amount,currency:r.currency,reference:r.reference,customerEmail:r.customer_email,packageId:r.package_id,packageName:packageName(r.package_id),billingPeriod:JSON.parse(r.billing_snapshot || '{}').billingPeriod || null,emailDelivery:r.email_status==='done' ? 'sent' : !emailEnabled ? 'disabled' : r.email_status==='review' ? 'review' : 'pending'};}
+  function registrationSummary(r) {return {amount:r.amount,currency:r.currency,reference:r.reference,invitedEmail:r.invitation_email || null,invitedName:r.invitation_name || null,packageId:r.package_id,packageName:packageName(r.package_id),clientDetails:r.client_details?JSON.parse(r.client_details):null,detailsLocked:Boolean(r.client_details),...(r.state==='paid'?{payment:paidResponse(r),order:orderResponse(r)}:{})};}
   async function deliver(r) {
     if(!sender || !r || r.state!=='paid') return r;
     if(!JSON.parse(r.billing_snapshot || '{}').address) return r;
@@ -153,13 +154,13 @@ export function createSheetsApp({config,store=createSheetStore(config),provider=
         check(body.invitationToken===undefined || (typeof body.invitationToken==='string' && /^[A-Za-z0-9_-]{43}$/.test(body.invitationToken)),403,'Invalid invitation link.');
         const r=await store('session',{sessionHash,newSessionHash,id:randomUUID(),reference:reference(),amount:config.registrationAmount,invitationRequired:invitations.required,invitationHash:body.invitationToken?hash(body.invitationToken):undefined});
         if(r.sessions.some(s=>s.hash===newSessionHash)) headers['Set-Cookie']=`${cookieName}=${nextToken}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200${config.secure?'; Secure':''}`;
-        return json(200,{ready:true});
+        return json(200,{ready:true,summary:registrationSummary(r)});
       }
       check(sessionHash,401,'Your registration session has expired. Reload this page to continue.');
       const r=await store('get',{sessionHash});
       if(invitations.required && !r.invitation_hash && !r.order_id) check(false,403,'An invitation is required. Please use the link sent by Tootica.');
       check(!r.invitation_revoked,403,'This invitation was revoked. Please contact support@tootica.com.');
-      if(path==='/api/payments/summary' && request.method==='GET') return json(200,{amount:r.amount,currency:r.currency,reference:r.reference,invitedEmail:r.invitation_email || null,invitedName:r.invitation_name || null,packageId:r.package_id,packageName:packageName(r.package_id),clientDetails:r.client_details?JSON.parse(r.client_details):null,detailsLocked:Boolean(r.client_details),...(r.state==='paid'?{payment:paidResponse(r),order:orderResponse(r)}:{})});
+      if(path==='/api/payments/summary' && request.method==='GET') return json(200,registrationSummary(r));
       if(path==='/api/payments/orders' && request.method==='POST') return json(200,await createOrder(r,request,body,sessionHash));
       if(path==='/api/payments/verify' && request.method==='POST') {
         check(orderPattern.test(body.razorpay_order_id || '') && paymentPattern.test(body.razorpay_payment_id || '') && /^[a-f0-9]{64}$/i.test(body.razorpay_signature || ''),400,'Valid payment ID, order ID and signature are required.');

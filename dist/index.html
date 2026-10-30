@@ -7,12 +7,16 @@
   <meta name="description" content="Tootica Client Agreement covering subscriptions, payments, installation, training, technical requirements, support and reference documents.">
   <title>Client Registration — Tootica</title>
   <link rel="icon" type="image/png" href="assets/tootica-icon.png">
-  <link rel="stylesheet" href="styles.css?v=invitations-v1">
-  <script type="module" src="app.js?v=invitations-v1"></script>
+  <link rel="stylesheet" href="styles.css?v=loading-v1">
+  <script type="module" src="app.js?v=loading-v1"></script>
 </head>
-<body>
+<body class="is-initializing">
+<div class="payment-preloader" id="page-preloader" role="status" aria-live="polite">
+  <div class="payment-preloader-content"><span class="payment-loader-dots" aria-hidden="true"><span></span><span></span><span></span></span><p>Checking your registration…</p></div>
+</div>
+<noscript><p>Please enable JavaScript to check your invitation and register.</p><style>#page-preloader{display:none}.is-initializing .site-shell{visibility:visible}</style></noscript>
 <a class="skip-link" href="#client-details-stage">Skip to content</a>
-<div class="site-shell" id="top">
+<div class="site-shell" id="top" inert aria-busy="true">
   <header class="hero">
     <div class="hero-photo" aria-hidden="true"></div>
     <nav class="navigation" aria-label="Main navigation">
@@ -272,6 +276,9 @@
 <div class="signing-pen-layer" id="signing-pen-layer" aria-hidden="true" hidden><img id="signing-pen" src="assets/signing-pen.png" alt="" width="1024" height="1536"></div>
 <div class="payment-preloader" id="payment-preloader" role="status" aria-live="polite" tabindex="-1" hidden>
   <div class="payment-preloader-content"><span class="payment-loader-dots" aria-hidden="true"><span></span><span></span><span></span></span><p>Processing…</p></div>
+</div>
+<div class="payment-preloader" id="request-preloader" role="status" aria-live="polite" hidden>
+  <div class="payment-preloader-content"><span class="payment-loader-dots" aria-hidden="true"><span></span><span></span><span></span></span><p id="request-preloader-message">Please wait…</p></div>
 </div>
 </body>
 </html>

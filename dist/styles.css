@@ -187,6 +187,10 @@ p,.terms-content p,.template-note p,footer p,.dialog-description,.eyebrow,.dialo
 .payment-status.is-error{background:#fff0f0;color:#972626}
 .payment-preloader{position:fixed;inset:0;z-index:1100;display:grid;place-items:center;overflow:clip;background:#ffffffed;backdrop-filter:blur(5px);cursor:progress}
 .payment-preloader[hidden]{display:none}
+.is-initializing .site-shell{visibility:hidden}
+button[aria-busy="true"]::before{content:'';display:inline-block;width:14px;height:14px;margin-right:8px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:middle;animation:loading-spin .8s linear infinite}
+@keyframes loading-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){button[aria-busy="true"]::before{animation:none;border-style:dotted}}
 .payment-preloader-content{display:grid;justify-items:center;gap:18px;padding:32px;text-align:center}
 .payment-preloader-content p{margin:0;color:#17284d;font-size:14px;font-weight:500;letter-spacing:.1px}
 .payment-loader-dots{display:flex;align-items:center;justify-content:center;gap:7px;height:18px}

@@ -7,12 +7,12 @@
   <meta name="referrer" content="no-referrer">
   <title>Client invitations - Tootica</title>
   <link rel="icon" href="assets/tootica-icon.png">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=loading-v1">
   <link rel="stylesheet" href="admin.css">
-  <script type="module" src="admin.mjs"></script>
+  <script type="module" src="admin.mjs?v=loading-v1"></script>
 </head>
 <body>
-  <main class="admin-shell">
+  <main class="admin-shell" id="admin-shell">
     <header class="admin-header"><div><p class="payment-eyebrow">Tootica administration</p><h1>Client invitations</h1></div><button class="secondary-button" id="admin-logout" hidden>Lock admin</button></header>
     <p id="admin-status" role="status" aria-live="polite">Enter your admin access key to manage invitations.</p>
     <form id="admin-login">
@@ -37,8 +37,11 @@
       </section>
       <div class="admin-header"><h2>Invitations</h2><button class="secondary-button" id="invitation-refresh" type="button">Refresh</button></div>
       <p>Checkout already started? Check payment status before issuing another invitation. Revocation is available before checkout starts.</p>
-      <div class="admin-table-scroll" role="region" aria-label="Client invitations" tabindex="0"><table><thead><tr><th>Client</th><th>Recipient</th><th>Status</th><th>Email delivery</th><th>Expires</th><th>Action</th></tr></thead><tbody id="invitation-list"></tbody></table></div>
+      <div class="admin-table-scroll" role="region" aria-label="Client invitations" tabindex="0"><table><thead><tr><th>Client</th><th>Recipient</th><th>Status</th><th>Email sent</th><th>Expires</th><th>Action</th></tr></thead><tbody id="invitation-list"></tbody></table></div>
     </section>
   </main>
+  <div class="payment-preloader" id="admin-preloader" role="status" aria-live="polite" hidden>
+    <div class="payment-preloader-content"><span class="payment-loader-dots" aria-hidden="true"><span></span><span></span><span></span></span><p id="admin-preloader-message">Loading invitations…</p></div>
+  </div>
 </body>
 </html>
