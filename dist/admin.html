@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>Client invitations - Tootica</title>
+  <link rel="icon" href="assets/tootica-icon.png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css">
+  <script type="module" src="admin.mjs"></script>
+</head>
+<body>
+  <main class="admin-shell">
+    <header class="admin-header"><div><p class="payment-eyebrow">Tootica administration</p><h1>Client invitations</h1></div><button class="secondary-button" id="admin-logout" hidden>Lock admin</button></header>
+    <p id="admin-status" role="status" aria-live="polite">Enter your admin access key to manage invitations.</p>
+    <form id="admin-login">
+      <label for="admin-key">Admin access key<input id="admin-key" type="password" autocomplete="off" required minlength="32"></label>
+      <button class="payment-button" type="submit">Unlock invitations</button>
+    </form>
+    <section id="admin-content" hidden>
+      <p id="admin-environment" class="admin-environment"></p>
+      <form id="invitation-create">
+        <h2>Create an invitation</h2>
+        <label>Client name<input name="name" autocomplete="off" maxlength="120" required></label>
+        <label>Client email<input name="email" type="email" autocomplete="off" maxlength="254" required></label>
+        <label>Link expires after<select name="days"><option value="1">1 day</option><option value="3">3 days</option><option value="7" selected>7 days</option></select></label>
+        <button class="payment-button" type="submit">Create invitation</button>
+      </form>
+      <section id="invitation-result" hidden aria-labelledby="invitation-result-heading">
+        <h2 id="invitation-result-heading">Share this link with the client</h2>
+        <label for="invitation-link">Invitation link<textarea id="invitation-link" readonly rows="3"></textarea></label>
+        <button class="secondary-button" id="invitation-copy" type="button">Copy link</button>
+        <p>The link is shown only when created. Send it directly to the invited client. It opens in one browser and does not verify who owns the email address.</p>
+      </section>
+      <div class="admin-header"><h2>Invitations</h2><button class="secondary-button" id="invitation-refresh" type="button">Refresh</button></div>
+      <p>Checkout already started? Check payment status before issuing another invitation. Revocation is available before checkout starts.</p>
+      <div class="admin-table-scroll" role="region" aria-label="Client invitations" tabindex="0"><table><thead><tr><th>Client</th><th>Email</th><th>Status</th><th>Expires</th><th>Action</th></tr></thead><tbody id="invitation-list"></tbody></table></div>
+    </section>
+  </main>
+</body>
+</html>

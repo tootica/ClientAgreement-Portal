@@ -25,6 +25,14 @@ test('Apps Script authenticates, locks writes, separates environments and escape
   assert.equal(rows.length,2);assert.equal(rows[1][2],'\'=HYPERLINK("malicious")');assert.equal(rows[1][5],"'+919876543210");
   assert.equal(JSON.parse(rows[1][0]).state,'creating');
   assert.equal(call('get',{id:'invoice',environment:'live'}).ok,false);assert.ok(tables.has('RegistrationsLive'));assert.equal(locked,false);
+  const invitation=call('invitation-create',{id:'invited',reference:'INVITED',amount:1187000,name:'Invited client',email:'invited@example.com',days:7,invitationHash:'hashed-invite'});
+  assert.equal(invitation.ok,true);
+  assert.equal(call('invitation-list').value[0].status,'pending');
+  assert.equal(call('session',{invitationHash:'hashed-invite',newSessionHash:'invited-session',invitationRequired:true}).ok,true);
+  assert.equal(call('invitation-list').value[0].status,'opened');
+  assert.equal(call('invitation-revoke',{id:'invited'}).value.status,'revoked');
+  assert.equal(JSON.parse(tables.get('RegistrationsTest').rows[2][0]).invitation_revoked,true);
+  assert.equal(locked,false);
 });
 test('generated Apps Script state engine matches tested source',()=>{
   const source=readFileSync(new URL('../server/sheet-state.mjs',import.meta.url),'utf8').replace('export function','function');

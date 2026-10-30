@@ -3,8 +3,11 @@ import {confirmationEmailState} from './confirmation-state.mjs';
 import {availablePackage,packageName} from './packages.mjs';
 import {validateConfig, validateOrder, requestPayment, isConfirmedPayment} from './payment-service.mjs';
 const invoiceToken = new URLSearchParams(location.hash.slice(1)).get('invoice');
+let invitationToken = new URLSearchParams(location.hash.slice(1)).get('invite');
 // Keep the invoice access token out of copied URLs and later navigation.
-if (invoiceToken) history.replaceState(null, '', location.pathname + location.search);
+if (invoiceToken || invitationToken) history.replaceState(null, '', location.pathname + location.search);
+// An invitation pasted into an already-open registration tab changes only the fragment.
+window.addEventListener('hashchange',()=>{if(new URLSearchParams(location.hash.slice(1)).has('invite'))location.reload();});
 import {createSignatureAnimation} from './signature-animation.mjs?v=42d5516fc8cd';
 
 const sections = [...document.querySelectorAll('.terms-content section')];
@@ -157,6 +160,20 @@ let selectedPackage = 'essential';
 let detailsLocked = false;
 const detailsStage = document.getElementById('client-details-stage');
 const detailsForm = document.getElementById('client-details-form');
+const invitationStage = document.getElementById('invitation-stage');
+let invitedEmail = '';
+detailsForm.inert = true;
+agreementForm.inert = true;
+function showInvitationNotice(message) {
+  detailsStage.hidden=true;packageStage.hidden=true;termsStage.hidden=true;paymentStage.hidden=true;confirmationStage.hidden=true;paymentErrorStage.hidden=true;navbarSearch.hidden=true;
+  invitationStage.hidden=false;
+  document.getElementById('invitation-message').textContent=message;
+  document.querySelector('.hero-title h1').textContent='Client invitation';
+  document.querySelector('.hero-title p').textContent='Registration for invited Tootica clients.';
+  document.querySelector('.skip-link').setAttribute('href','#invitation-stage');
+  invitationStage.focus({preventScroll:true});
+}
+document.getElementById('invitation-read-agreement').addEventListener('click',()=>showAgreementStage(false,true));
 const detailFields = [...detailsForm.querySelectorAll('input[name]')];
 function renderClientDetails() {
   if (!clientDetails) return;
@@ -170,7 +187,7 @@ function renderClientDetails() {
 function populateClientDetails(value, locked = false) {
   clientDetails = value;
   detailsLocked = locked;
-  for (const field of detailFields) {field.value = field.name === 'phone' ? (value.phone || '').replace(/^\+91(?=\d{10}$)/,'') : value[field.name] || ''; field.readOnly = locked; field.setCustomValidity('');}
+  for (const field of detailFields) {field.value = field.name === 'phone' ? (value.phone || '').replace(/^\+91(?=\d{10}$)/,'') : value[field.name] || ''; field.readOnly = locked || (field.name==='email' && Boolean(invitedEmail)); field.setCustomValidity('');}
   document.getElementById('details-lock-notice').hidden = !locked;
   for (const name of ['phone','email']) {
     detailsForm.elements.namedItem(name).removeAttribute('aria-invalid');
@@ -190,6 +207,8 @@ function updateProgress(current) {
   });
 }
 function showDetailsStage() {
+  if(detailsForm.inert) {showInvitationNotice('Open your invitation link to register.');return;}
+  invitationStage.hidden = true;
   paymentErrorStage.hidden = true;
   packageStage.hidden = true;
   confirmationStage.hidden = true;
@@ -217,6 +236,7 @@ detailsForm.addEventListener('submit', event => {
   showPackageStage();
 });
 function showPackageStage() {
+  invitationStage.hidden = true;
   paymentErrorStage.hidden = true;
   if (!clientDetails) return;
   detailsStage.hidden = true; termsStage.hidden = true; paymentStage.hidden = true; confirmationStage.hidden = true; navbarSearch.hidden = true;
@@ -284,6 +304,7 @@ signatureInput.addEventListener('input', () => signatureAnimation.clear());
 signatureInput.addEventListener('input', () => {signatureError.hidden=true;});
 window.addEventListener('pageshow', updateAgreementRequirements);
 function showAgreementStage(payment, fromDetails = false) {
+  invitationStage.hidden = true;
   paymentErrorStage.hidden = true;
   packageStage.hidden = true;
   confirmationStage.hidden = true;
@@ -612,15 +633,21 @@ async function initializePayments() {
     paymentConfig = validateConfig(await response.json());
     if (invoiceToken) await requestPayment(paymentConfig, '/session', {token:invoiceToken});
     if (!paymentConfig.enabled) {
+      if(paymentConfig.invitationRequired) showInvitationNotice('Open your invitation link to register. Registration is currently unavailable; please contact Tootica.');
+      else detailsForm.inert=false;
       updatePaymentStatus('Online payments are not available yet. Please contact Tootica for payment instructions.');
     } else {
       if (!invoiceToken) {
-        const startSession = () => requestPayment(paymentConfig, '/session', {});
+        const startSession = () => requestPayment(paymentConfig, '/session', invitationToken ? {invitationToken} : {});
         // Serialize first visits in cooperating tabs so they share the HttpOnly session.
         if (navigator.locks?.request) await navigator.locks.request('tootica-registration-session', startSession);
         else await startSession();
       }
       const summary = await requestPayment(paymentConfig, '/summary');
+      invitationToken=null;
+      invitedEmail=summary.invitedEmail || '';
+      if(invitedEmail) {emailInput.value=invitedEmail;emailInput.readOnly=true;document.getElementById('client-contact').value=summary.invitedName || '';}
+      detailsForm.inert=false;agreementForm.inert=false;
       if (!Number.isSafeInteger(summary.amount) || summary.amount <= 0 || !/^[A-Z]{3}$/.test(summary.currency) || typeof summary.reference !== 'string') throw new Error('Invalid invoice');
       renderOrder(summary);
       if (availablePackage(summary.packageId)) selectedPackage=summary.packageId;
@@ -632,6 +659,7 @@ async function initializePayments() {
       updatePaymentStatus(paymentConfig.environment === 'test' ? 'Test checkout — no live payment will be collected.' : 'Review your invoice, then continue to secure checkout.');
     }
   } catch (error) {
+    if(paymentConfig?.invitationRequired || invitationToken) showInvitationNotice(error.status ? error.message : 'Your invitation could not be checked. Reload this page or contact Tootica.');
     paymentConfig = null;
     updatePaymentStatus(error.status ? error.message : 'Online payments are temporarily unavailable. Please reload this page or contact Tootica for help.', true);
   }

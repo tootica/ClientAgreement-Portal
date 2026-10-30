@@ -1,0 +1,5 @@
+.not-found-stage{padding-top:48px;padding-bottom:64px}
+.not-found-code{font-size:clamp(80px,15vw,140px);font-weight:700;letter-spacing:-.06em;line-height:1;margin:0 0 24px;color:#0F71D6}
+.not-found-stage .confirmation-footnote{max-width:440px;margin:24px auto 0}
+.not-found-stage .confirmation-actions a{display:inline-flex;align-items:center;justify-content:center;gap:16px}
+@media(max-width:600px){.not-found-stage{padding-top:32px;padding-bottom:40px}}

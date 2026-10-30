@@ -44,7 +44,7 @@ function doPost(e) {
       if(json.length>45000) throw new Error('Record exceeds sheet capacity');
       if(json===originals[index]) return;
       var details=r.client_details ? JSON.parse(r.client_details) : {};
-      var cells=[json,r.reference,details.clinicName || '',r.customer_name || '',r.customer_email || '',details.phone || '',r.amount/100,r.currency,r.state,r.order_id || '',r.payment_id || '',r.paid_at ? new Date(r.paid_at).toISOString() : '',r.email_status,[details.addressLine1,details.addressLine2].filter(Boolean).join(', '),details.city || '',details.state || '',details.postalCode || '',r.acceptance ? r.acceptance.version : ''];
+      var cells=[json,r.reference,details.clinicName || '',r.customer_name || r.invitation_name || '',r.customer_email || r.invitation_email || '',details.phone || '',r.amount/100,r.currency,r.state,r.order_id || '',r.payment_id || '',r.paid_at ? new Date(r.paid_at).toISOString() : '',r.email_status,[details.addressLine1,details.addressLine2].filter(Boolean).join(', '),details.city || '',details.state || '',details.postalCode || '',r.acceptance ? r.acceptance.version : ''];
       // Plain strings only, including customer values that begin with formula characters.
       cells=cells.map(function(v){return typeof v==='string' && /^[=+\-@]/.test(v) ? "'"+v : v;});
       sheet.getRange(index+2,1,1,cells.length).setValues([cells]);

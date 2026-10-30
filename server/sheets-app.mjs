@@ -1,4 +1,4 @@
-import {createHash,randomBytes,randomUUID} from 'node:crypto';
+import {createHash,randomBytes,randomUUID,timingSafeEqual} from 'node:crypto';
 import {createSheetStore} from './sheets-store.mjs';
 import {createRazorpay,validSignature} from './razorpay.mjs';
 import {validateClientDetails,normalizeEmail} from '../dist/client-details.mjs';
@@ -12,6 +12,8 @@ const paymentPattern=/^pay_[A-Za-z0-9]+$/;
 function check(ok,status,message) {if(!ok){const error=new Error(message);error.status=status;throw error;}}
 export function createSheetsApp({config,store=createSheetStore(config),provider=createRazorpay(config),sendEmail}) {
   const cookieName=config.secure ? '__Host-tootica_session' : 'tootica_session';
+  const invitations=config.invitations || {required:false,adminKey:''};
+  const reference=()=>`TOOTICA-${config.environment==='test'?'TEST':'REG'}-${new Date().toISOString().slice(0,10).replaceAll('-','')}-${randomBytes(5).toString('hex').toUpperCase()}`;
   const emailEnabled=config.email.enabled && (config.environment!=='test' || config.email.allowTest);
   const sender=sendEmail || (emailEnabled ? createEmailSender(config) : null);
   function orderResponse(r) {return {order_id:r.order_id,orderId:r.order_id,keyId:config.keyId,amount:r.amount,currency:r.currency,reference:r.reference,customerEmail:r.customer_email,packageId:r.package_id,packageName:packageName(r.package_id)};}
@@ -60,7 +62,7 @@ export function createSheetsApp({config,store=createSheetStore(config),provider=
     check(email && details.valid,400,Object.values(details.errors)[0] || 'Enter a valid customer email address.');
     check(details.value.email===email && details.value.contactName===agreement.signerName.trim(),400,'Contact details must match the agreement and invoice email.');
     const claim=randomUUID();
-    const prepared=await store('prepare',{sessionHash,key,claim,email,name:agreement.signerName.trim(),version:agreement.version,clientDetails:JSON.stringify(details.value),fingerprint:hash(JSON.stringify([agreement.signerName.trim(),agreement.version,email,details.value]))});
+    const prepared=await store('prepare',{sessionHash,key,claim,email,name:agreement.signerName.trim(),version:agreement.version,clientDetails:JSON.stringify(details.value),fingerprint:hash(JSON.stringify([agreement.signerName.trim(),agreement.version,email,details.value])),invitationRequired:invitations.required});
     r=prepared.invoice;
     if(prepared.action==='existing') return orderResponse(r);
     if(prepared.action==='reconcile') {
@@ -83,7 +85,7 @@ export function createSheetsApp({config,store=createSheetStore(config),provider=
     const json=(code,body)=>new Response(JSON.stringify(body),{status:code,headers:{...headers,'Content-Type':'application/json; charset=utf-8'}});
     try {
       const path=new URL(request.url).pathname;
-      if(path==='/payment-config.json' && request.method==='GET') return json(200,{enabled:config.enabled && Boolean(config.sheetStore.url && config.sheetStore.secret),environment:config.environment,provider:'razorpay',apiBase:'/api/payments',merchantName:config.merchantName,description:config.description,logo:'assets/tootica-logo.png',agreementVersion:config.agreementVersion,keyFingerprint:config.keyId?hash(config.keyId).slice(0,12):null});
+      if(path==='/payment-config.json' && request.method==='GET') return json(200,{enabled:config.enabled && Boolean(config.sheetStore.url && config.sheetStore.secret),invitationRequired:invitations.required,environment:config.environment,provider:'razorpay',apiBase:'/api/payments',merchantName:config.merchantName,description:config.description,logo:'assets/tootica-logo.png',agreementVersion:config.agreementVersion,keyFingerprint:config.keyId?hash(config.keyId).slice(0,12):null});
       check(path.startsWith('/api/payments/'),404,'Endpoint not found.');
       // No paid or unpaid API access until a durable ledger has been configured.
       check(config.sheetStore.url && config.sheetStore.secret,503,'Google Sheets storage is not configured. Please contact Tootica.');
@@ -109,25 +111,47 @@ export function createSheetsApp({config,store=createSheetStore(config),provider=
       check(!request.headers.get('origin') || request.headers.get('origin')===config.origin,403,'Origin is not allowed.');
       check(request.headers.get('sec-fetch-site')!=='cross-site',403,'Cross-site request blocked.');
       if(ip) await store('rate',{rateKey:hash(config.sheetStore.secret+'|'+ip)});
+      if(path.startsWith('/api/payments/admin/')) {
+        const credential=request.headers.get('authorization') || '';
+        check(invitations.adminKey.length>=32 && credential.length<300 && timingSafeEqual(Buffer.from(hash(credential),'hex'),Buffer.from(hash('Bearer '+invitations.adminKey),'hex')),401,'Admin access denied.');
+      }
       let body;
       if(request.method==='POST') {
         check(request.headers.get('origin')===config.origin && request.headers.get('content-type')?.split(';')[0]==='application/json',403,'Same-origin JSON request required.');
         try{body=JSON.parse(raw);}catch{check(false,400,'Invalid JSON.');}
         check(body && typeof body==='object' && !Array.isArray(body),400,'Invalid request.');
       }
+      if(path==='/api/payments/admin/invitations' && request.method==='GET') return json(200,{environment:config.environment,invitations:await store('invitation-list')});
+      if(path==='/api/payments/admin/invitations' && request.method==='POST') {
+        const email=normalizeEmail(body.email),name=typeof body.name==='string'?body.name.trim():'';
+        check(email && name && name.length<=120 && !/[\u0000-\u001f\u007f]/.test(name),400,'Enter the client name and a valid email address.');
+        check(Number.isInteger(body.days) && body.days>=1 && body.days<=7,400,'Invitation expiry must be between 1 and 7 days.');
+        check(Number.isSafeInteger(config.registrationAmount),503,'Configure the registration price first.');
+        const invitationToken=randomBytes(32).toString('base64url');
+        const invitation=await store('invitation-create',{id:randomUUID(),reference:reference(),amount:config.registrationAmount,name,email,days:body.days,invitationHash:hash(invitationToken)});
+        return json(201,{invitation,url:config.origin+'/#invite='+invitationToken});
+      }
+      if(path==='/api/payments/admin/invitations/revoke' && request.method==='POST') {
+        check(typeof body.id==='string' && /^[a-f0-9-]{36}$/.test(body.id),400,'Invalid invitation.');
+        return json(200,{invitation:await store('invitation-revoke',{id:body.id})});
+      }
+      check(!path.startsWith('/api/payments/admin/'),404,'Endpoint not found.');
       const token=request.headers.get('cookie')?.split(';').map(v=>v.trim()).find(v=>v.startsWith(cookieName+'='))?.slice(cookieName.length+1);
       const sessionHash=typeof token==='string' && /^[A-Za-z0-9_-]{43}$/.test(token) ? hash(token) : null;
       if(path==='/api/payments/session' && request.method==='POST') {
         check(body.token===undefined,400,'Manual invoice links are unavailable. Open the registration page directly.');
         check(config.enabled && Number.isSafeInteger(config.registrationAmount),503,'Online payments are not available yet.');
         const nextToken=randomBytes(32).toString('base64url'),newSessionHash=hash(nextToken);
-        const r=await store('session',{sessionHash,newSessionHash,id:randomUUID(),reference:`TOOTICA-${config.environment==='test'?'TEST':'REG'}-${new Date().toISOString().slice(0,10).replaceAll('-','')}-${randomBytes(5).toString('hex').toUpperCase()}`,amount:config.registrationAmount});
+        check(body.invitationToken===undefined || (typeof body.invitationToken==='string' && /^[A-Za-z0-9_-]{43}$/.test(body.invitationToken)),403,'Invalid invitation link.');
+        const r=await store('session',{sessionHash,newSessionHash,id:randomUUID(),reference:reference(),amount:config.registrationAmount,invitationRequired:invitations.required,invitationHash:body.invitationToken?hash(body.invitationToken):undefined});
         if(r.sessions.some(s=>s.hash===newSessionHash)) headers['Set-Cookie']=`${cookieName}=${nextToken}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200${config.secure?'; Secure':''}`;
         return json(200,{ready:true});
       }
       check(sessionHash,401,'Your registration session has expired. Reload this page to continue.');
       const r=await store('get',{sessionHash});
-      if(path==='/api/payments/summary' && request.method==='GET') return json(200,{amount:r.amount,currency:r.currency,reference:r.reference,packageId:r.package_id,packageName:packageName(r.package_id),clientDetails:r.client_details?JSON.parse(r.client_details):null,detailsLocked:Boolean(r.client_details),...(r.state==='paid'?{payment:paidResponse(r),order:orderResponse(r)}:{})});
+      if(invitations.required && !r.invitation_hash && !r.order_id) check(false,403,'An invitation is required. Please use the link sent by Tootica.');
+      check(!r.invitation_revoked,403,'This invitation was revoked. Please contact Tootica.');
+      if(path==='/api/payments/summary' && request.method==='GET') return json(200,{amount:r.amount,currency:r.currency,reference:r.reference,invitedEmail:r.invitation_email || null,invitedName:r.invitation_name || null,packageId:r.package_id,packageName:packageName(r.package_id),clientDetails:r.client_details?JSON.parse(r.client_details):null,detailsLocked:Boolean(r.client_details),...(r.state==='paid'?{payment:paidResponse(r),order:orderResponse(r)}:{})});
       if(path==='/api/payments/orders' && request.method==='POST') return json(200,await createOrder(r,request,body,sessionHash));
       if(path==='/api/payments/verify' && request.method==='POST') {
         check(orderPattern.test(body.razorpay_order_id || '') && paymentPattern.test(body.razorpay_payment_id || '') && /^[a-f0-9]{64}$/i.test(body.razorpay_signature || ''),400,'Valid payment ID, order ID and signature are required.');

@@ -7,8 +7,8 @@
   <meta name="description" content="Tootica Client Agreement covering subscriptions, payments, installation, training, technical requirements, support and reference documents.">
   <title>Client Registration — Tootica</title>
   <link rel="icon" type="image/png" href="assets/tootica-icon.png">
-  <link rel="stylesheet" href="styles.css?v=annual-package-v1">
-  <script type="module" src="app.js?v=annual-package-v1"></script>
+  <link rel="stylesheet" href="styles.css?v=invitations-v1">
+  <script type="module" src="app.js?v=invitations-v1"></script>
 </head>
 <body>
 <a class="skip-link" href="#client-details-stage">Skip to content</a>
@@ -42,12 +42,21 @@
       <li class="progress-step"><span class="step-marker" aria-hidden="true">05</span><span class="step-label">Done</span></li>
     </ol>
   </nav>
+  <section class="confirmation-stage" id="invitation-stage" aria-labelledby="invitation-heading" tabindex="-1" hidden>
+    <div class="confirmation-card">
+      <p class="payment-eyebrow">Tootica client registration</p>
+      <h2 id="invitation-heading">Your invitation is required</h2>
+      <p class="confirmation-intro" id="invitation-message" role="status">Open the invitation link sent by Tootica to register.</p>
+      <button class="secondary-button" id="invitation-read-agreement" type="button">Read the agreement</button>
+      <p class="confirmation-footnote">If your link has expired, contact Tootica for a new invitation.</p>
+    </div>
+  </section>
   <main class="client-details-stage" id="client-details-stage" tabindex="-1" aria-labelledby="client-details-heading">
     <div class="client-details-card">
       <p class="payment-eyebrow">Step 1 of 5</p>
       <h2 id="client-details-heading">Your clinic details</h2>
       <p class="details-intro">Enter your clinic and billing details. All fields are required unless marked optional.</p>
-      <form id="client-details-form">
+      <form id="client-details-form" inert>
         <div class="client-form-grid">
           <label for="client-clinic">Clinic name<input id="client-clinic" name="clinicName" placeholder="Clinic name" autocomplete="organization" maxlength="120" required></label>
           <label for="client-contact">Contact person's full name<input id="client-contact" name="contactName" placeholder="Contact person's full name" autocomplete="name" maxlength="120" required></label>
@@ -165,7 +174,7 @@
         </ul>
         <p>Issues involving third-party services, equipment or changes outside the agreed scope may require additional coordination. Confirm any additional work and charges before proceeding.</p>
       </section>
-      <form class="agreement-acceptance" id="agreement-form" method="post" aria-label="Client Agreement acceptance">
+      <form class="agreement-acceptance" id="agreement-form" method="post" aria-label="Client Agreement acceptance" inert>
         <label class="agreement-consent" for="accept-client-agreement">
           <input type="checkbox" id="accept-client-agreement" name="accept-client-agreement" required>
           <span>I have read and agree to the Client Agreement.</span>

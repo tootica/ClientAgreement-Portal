@@ -12,6 +12,8 @@ Follow [deploy/GOOGLE-SHEETS-SETUP.md](deploy/GOOGLE-SHEETS-SETUP.md) to connect
 
 Use [deploy/PRODUCTION-SETUP.md](deploy/PRODUCTION-SETUP.md) for the Netlify deployment checklist, environment settings and launch verification. Deploy the project through Git or the Netlify CLI; uploading only `dist` will omit the payment API.
 
+For client-specific access, [enable invitation-only registration](deploy/INVITATIONS.md). The protected `/admin.html` page creates expiring links, tracks status and revokes invitations before checkout starts. The admin key remains server-only and is entered by staff at unlock; invitations do not verify email ownership.
+
 Sheets stores registration sessions, accepted details, order state, payment references and email delivery status. Apps Script serializes writes with a lock, preserves order claims across timeouts and prevents automatic duplicate email sends. The browser never receives storage, SMTP or Razorpay secrets. Keep the Sheet private and its application-managed tabs unedited; use a separate reporting tab for analysis. Existing `data/` files are preserved as historical backups and are no longer used. Historical records have not been migrated.
 
 ## Configuration and testing

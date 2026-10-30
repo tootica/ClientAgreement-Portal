@@ -11,8 +11,8 @@
     "deliveries": "node --env-file-if-exists=.env server/sheets-deliveries.mjs",
     "payments:check": "node --env-file-if-exists=.env server/payment-check.mjs",
     "test": "node --test tests/*.test.mjs",
-    "test:browser": "node tests/client-flow.browser.mjs",
-    "check": "node --check dist/app.js && node --check server/sheets-app.mjs && node --check server/sheet-state.mjs && node --check server/sheets-store.mjs && node --check server/index.mjs && node --check netlify/functions/payments.mjs && node --check netlify/functions/deliveries.mjs",
+    "test:browser": "node tests/client-flow.browser.mjs && node tests/invitations.browser.mjs",
+    "check": "node --check dist/app.js && node --check dist/admin.mjs && node --check server/sheets-app.mjs && node --check server/sheet-state.mjs && node --check server/sheets-store.mjs && node --check server/index.mjs && node --check netlify/functions/payments.mjs && node --check netlify/functions/deliveries.mjs",
     "sheets:build": "node scripts/build-sheets.mjs",
     "sheets:check": "node --env-file-if-exists=.env server/sheets-check.mjs"
   },

@@ -40,6 +40,8 @@ export function loadConfig(env = process.env) {
   const billing = {name:env.MERCHANT_NAME || 'Tootica', address:env.INVOICE_COMPANY_ADDRESS || '', taxId:env.INVOICE_TAX_ID || '', fontPath:env.INVOICE_FONT_PATH ? resolve(projectRoot, env.INVOICE_FONT_PATH) : ''};
   if (email.enabled && (!email.host || !Number.isInteger(email.port) || email.port < 1 || email.port > 65535 || !email.user || !email.password || !normalizeEmail(email.from) || (email.replyTo && !normalizeEmail(email.replyTo)) || !billing.address)) throw new Error('Configure SMTP, sender email and company billing address before enabling email.');
   const sheetStore={url:env.SHEETS_STORE_URL || '',secret:env.SHEETS_STORE_SECRET || ''};
+  const invitations={required:env.INVITATIONS_REQUIRED==='true',adminKey:env.INVITATION_ADMIN_KEY || ''};
+  if ((invitations.required || invitations.adminKey) && invitations.adminKey.length<32) throw new Error('INVITATION_ADMIN_KEY must contain at least 32 characters before enabling invitations.');
   if (sheetStore.url && !/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(sheetStore.url)) throw new Error('SHEETS_STORE_URL must be the deployed Google Apps Script HTTPS /exec URL.');
   if (sheetStore.secret && sheetStore.secret.length<32) throw new Error('SHEETS_STORE_SECRET must contain at least 32 characters.');
   for (const privatePath of [billing.fontPath].filter(Boolean)) {
@@ -51,6 +53,6 @@ export function loadConfig(env = process.env) {
     host:env.HOST || '127.0.0.1', port, staticDir,
     enabled, environment, registrationAmount, keyId:env.RAZORPAY_KEY_ID || '', keySecret:env.RAZORPAY_KEY_SECRET || '', webhookSecret:env.RAZORPAY_WEBHOOK_SECRET || '',
     merchantName:env.MERCHANT_NAME || 'Tootica', description:env.PAYMENT_DESCRIPTION || 'Tootica Essential annual plan (1 year)',
-    agreementVersion:env.AGREEMENT_VERSION || 'client-agreement-v1', email, billing, sheetStore
+    agreementVersion:env.AGREEMENT_VERSION || 'client-agreement-v1', email, billing, sheetStore, invitations
   };
 }

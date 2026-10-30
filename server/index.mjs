@@ -21,7 +21,13 @@ const server=createServer(async(req,res)=>{
     const file=resolve(config.staticDir,'.'+(path==='/'?'/index.html':path));
     if(!file.startsWith(resolve(config.staticDir)+sep) || !mime[extname(file)]) throw new Error('Invalid path');
     const body=await readFile(file);res.writeHead(200,{'Content-Type':mime[extname(file)],'X-Content-Type-Options':'nosniff','Cache-Control':'no-cache'});res.end(req.method==='HEAD'?undefined:body);
-  } catch {res.writeHead(404);res.end('Not found');}
+  } catch {
+    try {
+      const body=await readFile(resolve(config.staticDir,'404.html'));
+      res.writeHead(404,{'Content-Type':'text/html; charset=utf-8','X-Content-Type-Options':'nosniff','Cache-Control':'no-cache'});
+      res.end(req.method==='HEAD'?undefined:body);
+    } catch {res.writeHead(404,{'Content-Type':'text/plain; charset=utf-8'});res.end(req.method==='HEAD'?undefined:'Not found');}
+  }
 });
 server.requestTimeout=30000;server.headersTimeout=10000;
 server.on('error',error=>{console.error(error.code==='EADDRINUSE'?'Port is already in use. Stop the existing server before restarting.':'Server could not start.');process.exitCode=1;});
