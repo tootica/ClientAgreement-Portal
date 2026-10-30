@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+data/
+node_modules/
+artifacts/
+.netlify/
+*.log
+secrets/
+*.service-account.json
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

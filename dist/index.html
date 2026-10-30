@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Tootica Client Agreement covering subscriptions, payments, installation, training, technical requirements, support and reference documents.">
+  <title>Client Registration — Tootica</title>
+  <link rel="icon" type="image/png" href="assets/tootica-icon.png">
+  <link rel="stylesheet" href="styles.css?v=annual-package-v1">
+  <script type="module" src="app.js?v=annual-package-v1"></script>
+</head>
+<body>
+<a class="skip-link" href="#client-details-stage">Skip to content</a>
+<div class="site-shell" id="top">
+  <header class="hero">
+    <div class="hero-photo" aria-hidden="true"></div>
+    <nav class="navigation" aria-label="Main navigation">
+      <a class="brand" href="#top" aria-label="Tootica home"><span class="logo-lockup" aria-hidden="true"><span class="logo-symbol"><img src="assets/tootica-logo.png" alt="" width="1650" height="437"></span><span class="logo-wordmark"><img src="assets/tootica-logo.png" alt="" width="1650" height="437"></span></span></a>
+      <div class="nav-actions">
+        <div class="navbar-search" id="navbar-search" hidden>
+          <div class="navbar-search-field">
+            <button class="icon-button search-button" id="search-toggle" type="button" aria-label="Search these terms" aria-expanded="false" aria-controls="navbar-search-content"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></button>
+            <div class="navbar-search-content" id="navbar-search-content" hidden>
+              <input type="search" id="term-search" placeholder="Search here." aria-label="Search client agreement" aria-describedby="search-help" autocomplete="off">
+              <span id="search-status" class="navbar-search-status" role="status" aria-live="polite"></span>
+              <button class="icon-button navbar-search-close" id="search-close" type="button" aria-label="Close search">×</button>
+            </div>
+          </div>
+          <span id="search-help" class="visually-hidden">Press Enter to jump to the next matching word. Press Shift and Enter for the previous match.</span>
+        </div>
+      </div>
+    </nav>
+    <div class="hero-title"><h1>Client Details</h1><p>Tell us about your clinic and billing contact.</p></div>
+  </header>
+  <nav class="agreement-progress" aria-label="Setup progress">
+    <ol class="progress-steps">
+      <li class="progress-step is-current" aria-current="step"><span class="step-marker" aria-hidden="true">01</span><span class="step-label">Details</span><span class="visually-hidden"> - current step</span></li>
+      <li class="progress-step"><span class="step-marker" aria-hidden="true">02</span><span class="step-label">Package</span></li>
+      <li class="progress-step"><span class="step-marker" aria-hidden="true">03</span><span class="step-label">Agreement</span></li>
+      <li class="progress-step"><span class="step-marker" aria-hidden="true">04</span><span class="step-label">Payment</span></li>
+      <li class="progress-step"><span class="step-marker" aria-hidden="true">05</span><span class="step-label">Done</span></li>
+    </ol>
+  </nav>
+  <main class="client-details-stage" id="client-details-stage" tabindex="-1" aria-labelledby="client-details-heading">
+    <div class="client-details-card">
+      <p class="payment-eyebrow">Step 1 of 5</p>
+      <h2 id="client-details-heading">Your clinic details</h2>
+      <p class="details-intro">Enter your clinic and billing details. All fields are required unless marked optional.</p>
+      <form id="client-details-form">
+        <div class="client-form-grid">
+          <label for="client-clinic">Clinic name<input id="client-clinic" name="clinicName" placeholder="Clinic name" autocomplete="organization" maxlength="120" required></label>
+          <label for="client-contact">Contact person's full name<input id="client-contact" name="contactName" placeholder="Contact person's full name" autocomplete="name" maxlength="120" required></label>
+          <label for="client-email">Email address<input id="client-email" name="email" placeholder="Email address" type="email" autocomplete="email" maxlength="254" aria-describedby="email-notice client-email-error" required><span id="client-email-error" class="contact-field-error" aria-live="polite" hidden></span></label>
+          <label for="client-phone">Phone number<span class="phone-input"><span class="phone-prefix" aria-hidden="true">+91</span><input id="client-phone" name="phone" type="tel" autocomplete="tel-national" inputmode="numeric" pattern="[0-9]{10}" minlength="10" maxlength="10" placeholder="Phone number" title="Enter exactly 10 digits without +91 or spaces" aria-describedby="client-phone-error" required></span><span id="client-phone-error" class="contact-field-error" aria-live="polite" hidden></span></label>
+          <label class="full-width" for="client-address">Billing address<input id="client-address" name="addressLine1" autocomplete="address-line1" maxlength="160" placeholder="Billing address" required></label>
+          <label class="full-width" for="client-address-2">Address line 2 (optional)<input id="client-address-2" name="addressLine2" placeholder="Address line 2 (optional)" autocomplete="address-line2" maxlength="160"></label>
+          <label for="client-city">City<input id="client-city" name="city" placeholder="City" autocomplete="address-level2" maxlength="80" required></label>
+          <label for="client-state">State / union territory<input id="client-state" name="state" placeholder="State / union territory" autocomplete="address-level1" maxlength="80" required></label>
+          <label for="client-pin">PIN code<input id="client-pin" name="postalCode" placeholder="PIN code" autocomplete="postal-code" inputmode="numeric" pattern="[1-9][0-9]{5}" maxlength="6" required></label>
+          <label for="client-gstin">GSTIN (optional)<input id="client-gstin" name="gstin" placeholder="GSTIN (optional)" maxlength="15" autocapitalize="characters" spellcheck="false" aria-describedby="gstin-notice"></label>
+        </div>
+        <p id="gstin-notice" class="details-help">Billing country: India. Add your GSTIN if it should appear on your invoice.</p>
+        <p id="email-notice" class="details-help">We use your contact and billing details for registration, onboarding, payment confirmation and your invoice. Please check your email before continuing.</p>
+        <p id="details-lock-notice" class="details-help" hidden>Your invoice details have already been recorded. Contact Tootica if a correction is needed.</p>
+        <div class="details-actions"><button class="payment-button" type="submit">Continue to Packages</button></div>
+      </form>
+    </div>
+  </main>
+  <section class="package-stage" id="package-stage" aria-labelledby="package-heading" tabindex="-1" hidden>
+    <div class="client-details-card">
+      <p class="payment-eyebrow">Step 2 of 5</p>
+      <h2 id="package-heading">Choose your package</h2>
+      <p class="details-intro">Get started with Essential. Practice Plus is coming soon.</p>
+      <form id="package-form">
+        <fieldset class="package-options">
+          <legend class="visually-hidden">Registration package</legend>
+          <label class="package-card is-selected">
+            <span class="package-card-top"><input type="radio" id="package-essential" name="package" value="essential" checked required><span class="package-badge">Available now</span></span>
+            <span class="package-title">Essential</span>
+            <span class="package-price-row"><span class="package-price" id="essential-price">Shown at checkout</span><span class="package-price-unit">/ year</span></span>
+            <span class="package-description">Essential annual plan. Pay for one year, with no automatic renewal.</span>
+            <span class="package-selection-note">Selected package</span>
+          </label>
+          <label class="package-card is-unavailable" aria-disabled="true">
+            <span class="package-card-top"><input type="radio" id="package-practice-plus" name="package" value="practice-plus" disabled><span class="package-badge">Coming soon</span></span>
+            <span class="package-title">Practice Plus</span>
+            <span class="package-description">This package will be available later.</span>
+            <span class="package-selection-note">Not available for selection yet</span>
+          </label>
+        </fieldset>
+        <p id="package-error" class="signature-error" role="alert" hidden></p>
+        <div class="package-actions">
+          <button class="secondary-button" id="package-back-button" type="button">Back to Details</button>
+          <button class="payment-button" type="submit">Continue to Agreement</button>
+        </div>
+      </form>
+    </div>
+  </section>
+  <main class="document-layout" id="main" tabindex="-1" hidden>
+    <aside class="table-of-contents" aria-label="Table of contents">
+      <p class="toc-heading">Table of contents</p>
+      <nav class="toc-links">
+        <a href="#introduction" class="active" aria-current="location"><span class="toc-icon" aria-hidden="true"></span><span>Introduction</span></a>
+        <a href="#about-tootica"><span class="toc-icon" aria-hidden="true"></span><span>About Tootica</span></a>
+        <a href="#payment-subscription"><span class="toc-icon" aria-hidden="true"></span><span>Payment and subscription terms</span></a>
+        <a href="#hardware-software"><span class="toc-icon" aria-hidden="true"></span><span>Hardware and software requirements</span></a>
+        <a href="#installation-training"><span class="toc-icon" aria-hidden="true"></span><span>Installation and training terms</span></a>
+        <a href="#support-escalation"><span class="toc-icon" aria-hidden="true"></span><span>Support and escalation terms</span></a>
+      </nav>
+    </aside>
+    <article class="terms-content">
+      <div class="client-review" aria-label="Client details for this agreement">
+        <div class="client-review-heading"><h2>Registration details</h2><button type="button" class="text-button" data-edit-details>Edit details</button></div>
+        <div class="client-details-summary"></div>
+      </div>
+      <section id="introduction"><h2>Introduction</h2>
+        <p>Welcome to Tootica, your partner in managing your dental practice. This Client Agreement outlines your selected subscription and the installation, onboarding, training and support services included in your agreed scope. Read it alongside your quotation, subscription order and supporting documents for a clear understanding of the features, fees, responsibilities and implementation arrangements that apply to your clinic. Together, these documents explain what your clinic can expect from Tootica and how we will work with your team to get started.</p>
+        <p>Check your clinic details, selected plan and authorised contacts before accepting. Contact Tootica for clarification and ensure any agreed changes are documented in writing.</p>
+      </section>
+      <section id="about-tootica"><h2>About Tootica</h2>
+        <p>Tootica is a dental practice management system that brings appointment scheduling, patient records, doctor and staff management, and practice analytics into one platform. Designed for dental clinics with one or more branches, it helps administrators, dentists and receptionists coordinate daily operations, manage access according to their roles and maintain a clear view of practice activity.</p>
+      </section>
+      <section id="payment-subscription"><h2>Payment and subscription terms</h2>
+        <p>Review your selected plan, subscription dates, fees and any applicable taxes before paying.</p>
+        <ul class="agreement-list">
+          <li><strong>Plan and services:</strong> Your quotation or order lists the included services and any limits on users or branches.</li>
+          <li><strong>Fees and payment:</strong> Check all subscription, setup, training and optional charges. Pay the amount shown on your invoice by its due date and quote the invoice reference for billing queries.</li>
+          <li><strong>Renewals and cancellations:</strong> Confirm renewal, cancellation and refund terms with Tootica before subscribing.</li>
+          <li><strong>Changes:</strong> Agree any additional services, revised fees or billing dates with Tootica in writing before they take effect.</li>
+          <li><strong>WhatsApp integration charges:</strong> Tootica charges a one-time initiation fee of ₹970 for WhatsApp setup and integration. This fee is separate from Meta's messaging usage charges and does not include a messaging balance or unlimited usage.</li>
+          <li><strong>WhatsApp signup and usage charges:</strong> Where Embedded Signup is offered, you authorise Tootica to connect your clinic's WhatsApp Business account. Signup does not include free or unlimited messaging. Your clinic is responsible for usage charges at Meta's applicable rates, billed by Meta or the agreed billing provider. The billing arrangement will be confirmed before activation; maintain the payment method or prepaid balance it requires.</li>
+        </ul>
+      </section>
+      <section id="hardware-software"><h2>Hardware and software requirements</h2>
+        <p>For the hosted application, the following is the recommended minimum setup for each clinic workstation:</p>
+        <ul class="agreement-list">
+          <li><strong>Processor and memory:</strong> A dual-core processor with 4 GB RAM. For smoother use with multiple browser tabs or other applications, 8 GB RAM is recommended.</li>
+          <li><strong>Operating system:</strong> Windows 11, or a currently supported version of macOS or Linux capable of running the latest Google Chrome or Microsoft Edge.</li>
+          <li><strong>Display:</strong> A desktop or laptop display with a resolution of at least 1366 x 768 pixels.</li>
+          <li><strong>Browser:</strong> The latest stable version of Google Chrome or Microsoft Edge, with JavaScript and cookies enabled.</li>
+          <li><strong>Internet:</strong> A stable broadband connection with at least 5 Mbps download and 1 Mbps upload available per active workstation. Larger file uploads may require more bandwidth. Your network must allow HTTPS access to Tootica; offline use is not supported.</li>
+          <li><strong>Additional equipment:</strong> Printers and scanners are optional unless required for your agreed workflow. Confirm compatibility with Tootica before purchasing or connecting them.</li>
+        </ul>
+        <p>No local server or database installation is required. These are recommended starting specifications; suitability should be confirmed during onboarding using your clinic's devices, network and expected workload.</p>
+      </section>
+      <section id="installation-training"><h2>Installation and training terms</h2>
+        <p>Tootica will coordinate application setup and training with your clinic based on an agreed scope and schedule.</p>
+        <ul class="agreement-list">
+          <li><strong>Readiness:</strong> Ensure the required devices, internet access and authorised team members are available for setup and training.</li>
+          <li><strong>Setup:</strong> Confirm the configuration, data preparation, migration and third-party integrations included in the agreed scope.</li>
+          <li><strong>Training:</strong> Online training is included. In-person training may be provided subject to availability and scheduling agreed with Tootica. Instructional videos will also be shared to help your team use the system.</li>
+          <li><strong>Scheduling:</strong> Agree the training topics, participants and session dates with Tootica. Inform us promptly of any changes in availability or technical readiness.</li>
+        </ul>
+        <p>After setup and training, review any outstanding items with Tootica. Additional work outside the agreed scope will be discussed and agreed separately.</p>
+      </section>
+      <section id="support-escalation"><h2>Support and escalation terms</h2>
+        <p>Use the support contact details and channels provided for your subscription. Support hours, included services, response targets and escalation contacts should be confirmed in your agreed support arrangement.</p>
+        <p>When raising a request, include your organisation’s name, a contact person, a clear description of the issue, its effect on your work and any relevant error message. Where helpful, include screenshots with unnecessary confidential information removed.</p>
+        <ul class="agreement-list">
+          <li><strong>Initial request:</strong> Describe the issue and any steps already taken so the support team can assess it.</li>
+          <li><strong>Follow-up:</strong> Use the existing ticket or reference number when providing further information or requesting an update.</li>
+          <li><strong>Escalation:</strong> If the issue remains unresolved or its business impact increases, request escalation by emailing support@tootica.om and explain the updated impact. If urgent resolution is required, a Tootica consultant will contact you to assess the issue and coordinate the next steps.</li>
+          <li><strong>Coordination:</strong> Provide an authorised contact for any troubleshooting session and agree on access arrangements before remote assistance.</li>
+        </ul>
+        <p>Issues involving third-party services, equipment or changes outside the agreed scope may require additional coordination. Confirm any additional work and charges before proceeding.</p>
+      </section>
+      <form class="agreement-acceptance" id="agreement-form" method="post" aria-label="Client Agreement acceptance">
+        <label class="agreement-consent" for="accept-client-agreement">
+          <input type="checkbox" id="accept-client-agreement" name="accept-client-agreement" required>
+          <span>I have read and agree to the Client Agreement.</span>
+        </label>
+        <div class="signature-field">
+          <label class="signature-label" for="client-signature">Digital signature <span class="required-indicator" aria-hidden="true">*</span></label>
+          <p id="signature-notice">Your name from Client Details is used as your signature. Select Sign Agreement to confirm acceptance.</p>
+          <input type="text" id="client-signature" name="client-signature" placeholder="Type your full name" aria-describedby="signature-notice agreement-form-hint" autocomplete="name" spellcheck="false" maxlength="120" readonly required>
+        </div>
+        <div class="agreement-actions">
+          <p id="agreement-form-hint">Review your details, tick the checkbox, then sign to continue.</p>
+          <button class="sign-agreement-button" id="sign-agreement" type="submit" disabled>Sign Agreement</button>
+        </div>
+        <div class="signature-animation-stage" id="signature-animation-stage" aria-label="Handwritten signature" hidden>
+          <svg class="signature-writing" id="signature-writing" role="img" viewBox="0 0 720 150" preserveAspectRatio="xMidYMid meet"></svg>
+          <p class="visually-hidden" id="signature-animation-status" role="status" aria-live="polite"></p>
+        </div>
+        <p class="signature-error" id="signature-error" role="alert" hidden></p>
+      </form>
+    </article>
+  </main>
+  <section class="payment-stage" id="payment-stage" aria-labelledby="payment-heading" tabindex="-1" hidden>
+    <div class="payment-stage-content">
+      <p class="payment-eyebrow">Step 4 of 5</p>
+      <h2 id="payment-heading">Payment</h2>
+      <div class="payment-summary" role="list" aria-label="Payment summary">
+        <div class="payment-row" role="listitem">
+          <span>Essential annual plan (1 year)</span>
+          <strong id="payment-amount">Shown on your invoice</strong>
+        </div>
+        <div class="payment-row" role="listitem">
+          <span>Processing</span>
+          <strong>Secure checkout</strong>
+        </div>
+        <div class="payment-row" role="listitem">
+          <span>Invoice reference</span>
+          <strong id="payment-reference">Assigned at checkout</strong>
+        </div>
+      </div>
+      <div class="client-review" aria-label="Review your billing details">
+        <div class="client-review-heading"><h3>Billing details</h3><button type="button" class="text-button" data-edit-details>Edit details</button></div>
+        <div class="client-details-summary"></div>
+      </div>
+      <div class="payment-actions">
+        <button class="payment-button" id="pay-now-button" type="button" disabled>Pay Now</button>
+        <button class="secondary-button" id="payment-back-button" type="button">Back to Agreement</button>
+      </div>
+      <p class="payment-status" id="payment-status" aria-live="polite">Checking payment availability?</p>
+    </div>
+  </section>
+  <section class="confirmation-stage payment-error-stage" id="payment-error-stage" aria-labelledby="payment-error-heading" aria-describedby="payment-error-message" tabindex="-1" hidden>
+    <div class="confirmation-card">
+      <div class="payment-error-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m8 8 8 8M16 8l-8 8"/></svg></div>
+      <p class="payment-error-eyebrow">Payment incomplete</p>
+      <h2 id="payment-error-heading">Payment unsuccessful</h2>
+      <p class="confirmation-intro" id="payment-error-message" role="status" aria-live="polite"></p>
+      <p class="payment-error-reference" id="payment-error-reference"></p>
+      <div class="confirmation-actions">
+        <button class="payment-button" id="payment-error-retry" type="button">Try again</button>
+        <button class="secondary-button" id="payment-error-agreement" type="button">Review agreement</button>
+      </div>
+      <p class="confirmation-footnote">Need help? Contact Tootica with your invoice reference.</p>
+    </div>
+  </section>
+  <section class="confirmation-stage" id="confirmation-stage" aria-labelledby="confirmation-heading" tabindex="-1" hidden>
+    <div class="confirmation-card">
+      <div class="confirmation-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6 12 4 4 8-8"/></svg></div>
+      <p class="confirmation-eyebrow">Payment confirmed</p>
+      <h2 id="confirmation-heading">You're all set!</h2>
+      <p class="confirmation-intro">Thank you for registering with Tootica. Your payment is complete.</p>
+      <div class="confirmation-email-panel" id="confirmation-email-panel" role="status" aria-live="polite" aria-atomic="true">
+        <div class="confirmation-email-top"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/></svg><span id="confirmation-email-badge">Preparing</span></div>
+        <h3 id="confirmation-email-heading">We're preparing your email</h3>
+        <p id="confirmation-email-message"></p>
+        <p class="confirmation-email-address" id="confirmation-email"></p>
+        <p class="confirmation-email-hint" id="confirmation-email-hint"></p>
+      </div>
+      <dl class="confirmation-receipt" aria-label="Payment receipt details">
+        <div><dt>Package</dt><dd id="confirmation-package"></dd></div>
+        <div id="confirmation-period-row" hidden><dt>Billing period</dt><dd>1 year</dd></div>
+        <div><dt>Amount paid</dt><dd id="confirmation-amount"></dd></div>
+        <div><dt>Invoice reference</dt><dd id="confirmation-invoice-reference"></dd></div>
+        <div><dt>Payment reference</dt><dd id="confirmation-payment-reference"></dd></div>
+      </dl>
+      <div class="confirmation-actions">
+        <a class="payment-button" id="download-invoice" href="/api/payments/invoice" download hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v5h14v-5"/></svg>Download paid invoice</a>
+        <button class="secondary-button" id="check-email-status" type="button" hidden>Check email status</button>
+      </div>
+      <p class="confirmation-refresh-status" id="confirmation-refresh-status" role="status" aria-live="polite"></p>
+      <p class="confirmation-footnote">Keep a copy of your invoice for your records.</p>
+    </div>
+  </section>
+  <footer class="site-footer"><p>© <span id="year">2026</span> Tootica. All rights reserved.</p></footer>
+</div>
+<div class="signing-pen-layer" id="signing-pen-layer" aria-hidden="true" hidden><img id="signing-pen" src="assets/signing-pen.png" alt="" width="1024" height="1536"></div>
+<div class="payment-preloader" id="payment-preloader" role="status" aria-live="polite" tabindex="-1" hidden>
+  <div class="payment-preloader-content"><span class="payment-loader-dots" aria-hidden="true"><span></span><span></span><span></span></span><p>Processing…</p></div>
+</div>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "enabled": false,
+  "provider": "razorpay",
+  "environment": "test",
+  "apiBase": "/api/payments",
+  "merchantName": "Tootica",
+  "description": "Tootica Essential annual plan (1 year)",
+  "logo": "assets/tootica-logo.png",
+  "agreementVersion": "client-agreement-v1"
+}

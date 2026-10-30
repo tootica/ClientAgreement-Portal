@@ -1,0 +1,7 @@
+Active pen lettering: connected slanted Script 1-stroke (alt), based on the public-domain Hershey data in techninja/hersheytextjs.
+Source: https://github.com/techninja/hersheytextjs/blob/master/hersheytext.json
+Only the public-domain JSON stroke data is used, not the repository code. Layout, smoothing and pen animation are implemented locally.
+
+Bundled data: signature-handwriting.json.
+The repository identifies its JSON font data as public domain:
+https://github.com/techninja/hersheytextjs#readme
