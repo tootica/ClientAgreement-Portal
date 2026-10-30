@@ -39,6 +39,14 @@ For passwords and keys, copy the actual value directly from your private local f
 
 ### Values to enter
 
+Mark only sensitive credentials as **Contains secret values**: `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `SMTP_PASSWORD`, `SHEETS_STORE_SECRET`, and `INVITATION_ADMIN_KEY`. `RAZORPAY_KEY_ID` is a public checkout identifier and can remain an ordinary environment variable. Other private settings, such as the SMTP login, can also be marked secret if desired.
+
+Keep ordinary configuration values unmarked: `NODE_ENV`, `PAYMENT_ENVIRONMENT`, `PORT`, `HOST`, `AGREEMENT_VERSION`, `PAYMENT_DESCRIPTION`, `MERCHANT_NAME`, `EMAIL_FROM`, `ESSENTIAL_PRICE_INR`, `SMTP_HOST` and `PUBLIC_ORIGIN`. Their values intentionally appear in source files, documentation or the public interface. Boolean flags and `SMTP_PORT`/`SMTP_SECURE` are also ordinary configuration.
+
+If Netlify reports these ordinary variables in a secrets-scanning failure, open each listed variable under **Environment variables > Options > Edit**, clear **Contains secret values**, save, and redeploy. Keep its value unchanged. Keep scanning enabled and keep actual credentials marked secret; do not exclude whole source directories from scanning. After importing an env file, review the secret flags individually rather than treating every imported variable as a secret.
+
+`netlify.toml` also sets `SECRETS_SCAN_OMIT_KEYS` for the eleven ordinary variables listed above so their expected appearances do not fail the build even if they were imported with secret flags. README files and other source paths remain scanned, and no credential keys are excluded. Deploy this updated configuration to apply the fix. If your build uses a different Netlify configuration file, use the same `SECRETS_SCAN_OMIT_KEYS` value from this project's `netlify.toml` in the site's build environment settings.
+
 | Variable | First hosted test | Live launch |
 | --- | --- | --- |
 | `NODE_ENV` | `production` | `production` |

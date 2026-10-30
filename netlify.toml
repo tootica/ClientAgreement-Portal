@@ -5,6 +5,9 @@
 
 [build.environment]
   NODE_VERSION = "24"
+  # Public configuration values also occur in documentation and source code.
+  # Keep credential values and all source paths covered by secret scanning.
+  SECRETS_SCAN_OMIT_KEYS = "NODE_ENV,PAYMENT_ENVIRONMENT,PORT,HOST,AGREEMENT_VERSION,PAYMENT_DESCRIPTION,MERCHANT_NAME,EMAIL_FROM,ESSENTIAL_PRICE_INR,SMTP_HOST,PUBLIC_ORIGIN"
 
 [functions]
   node_bundler = "esbuild"
