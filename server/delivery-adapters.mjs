@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import {renderInvoice} from './invoice-pdf.mjs';
+import {renderAgreement} from './agreement-pdf.mjs';
 import {packageName} from '../dist/packages.mjs';
 
 function createTransport(config) {
@@ -16,16 +17,21 @@ export function createEmailSender(config, transport) {
   const settings = config.email;
   transport ||= createTransport(config);
   return async invoice => {
+    if (invoice.state !== 'paid') throw new Error('Payment must be confirmed before sending the invoice and client agreement.');
     const attachment = await renderInvoice(invoice, {fontPath:config.billing.fontPath});
+    const agreement = await renderAgreement(invoice, {staticDir:config.staticDir, fontPath:config.billing.fontPath});
     const billing = JSON.parse(invoice.billing_snapshot || '{}');
     const domain = settings.from.split('@')[1];
     const message = {
       from:{name:billing.name || config.merchantName, address:settings.from}, to:{name:invoice.customer_name, address:invoice.customer_email},
       ...(settings.replyTo ? {replyTo:settings.replyTo} : {}),
       messageId:`<tootica-${invoice.id}@${domain}>`,
-      subject:(invoice.environment === 'test' ? '[TEST] ' : '') + 'Payment confirmed — Invoice ' + invoice.reference,
-      text:`Hello ${invoice.customer_name},\n\nYour payment of INR ${(invoice.amount / 100).toFixed(2)} has been confirmed.${invoice.package_id ? '\nPackage: ' + packageName(invoice.package_id) : ''}${billing.billingPeriod === 'year' ? '\nBilling period: 1 year. No automatic renewal.' : ''}\nInvoice: ${invoice.reference}\nPayment reference: ${invoice.payment_id}\n\nYour paid invoice is attached.\n\nThank you,\n${billing.name || config.merchantName}${invoice.environment === 'test' ? '\n\nTEST PAYMENT: No live funds were collected.' : ''}`,
-      attachments:[{filename:'invoice-' + invoice.reference.replace(/[^A-Za-z0-9_-]/g,'_') + '.pdf', content:attachment, contentType:'application/pdf'}]
+      subject:(invoice.environment === 'test' ? '[TEST] ' : '') + 'Payment confirmed — Invoice and Client Agreement ' + invoice.reference,
+      text:`Hello ${invoice.customer_name},\n\nYour payment of INR ${(invoice.amount / 100).toFixed(2)} has been confirmed.${invoice.package_id ? '\nPackage: ' + packageName(invoice.package_id) : ''}${billing.billingPeriod === 'year' ? '\nBilling period: 1 year. No automatic renewal.' : ''}\nInvoice: ${invoice.reference}\nPayment reference: ${invoice.payment_id}\n\nAttached are your paid invoice and a copy of your accepted Client Agreement, including your typed digital signature and acceptance details. Please keep both documents for your records.\n\nFor help, contact ${settings.replyTo || 'support@tootica.com'}.\n\nThank you,\n${billing.name || config.merchantName}${invoice.environment === 'test' ? '\n\nTEST PAYMENT: No live funds were collected.' : ''}`,
+      attachments:[
+        {filename:'invoice-' + invoice.reference.replace(/[^A-Za-z0-9_-]/g,'_') + '.pdf', content:attachment, contentType:'application/pdf'},
+        {filename:'client-agreement-' + invoice.reference.replace(/[^A-Za-z0-9_-]/g,'_') + '.pdf', content:agreement, contentType:'application/pdf'}
+      ]
     };
     try {
       const result = await transport.sendMail(message);

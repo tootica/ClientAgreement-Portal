@@ -8,7 +8,7 @@
   <title>Client Registration — Tootica</title>
   <link rel="icon" type="image/png" href="assets/tootica-icon.png">
   <link rel="stylesheet" href="styles.css?v=loading-v1">
-  <script type="module" src="app.js?v=loading-v1"></script>
+  <script type="module" src="app.js?v=manual-signature-v1"></script>
 </head>
 <body class="is-initializing">
 <div class="payment-preloader" id="page-preloader" role="status" aria-live="polite">
@@ -184,12 +184,12 @@
           <span>I have read and agree to the Client Agreement.</span>
         </label>
         <div class="signature-field">
-          <label class="signature-label" for="client-signature">Digital signature <span class="required-indicator" aria-hidden="true">*</span></label>
-          <p id="signature-notice">Your name from Client Details is used as your signature. Select Sign Agreement to confirm acceptance.</p>
-          <input type="text" id="client-signature" name="client-signature" placeholder="Type your full name" aria-describedby="signature-notice agreement-form-hint" autocomplete="name" spellcheck="false" maxlength="120" readonly required>
+          <label class="signature-label" for="client-signature">Digital signature — type your full name <span class="required-indicator" aria-hidden="true">*</span></label>
+          <p id="signature-notice">Type your entire name exactly as entered in Client Details. This will be your digital signature. Select Sign Agreement to confirm acceptance.</p>
+          <input type="text" id="client-signature" name="client-signature" placeholder="Type your entire name" aria-describedby="signature-notice agreement-form-hint" autocomplete="off" spellcheck="false" maxlength="120" required>
         </div>
         <div class="agreement-actions">
-          <p id="agreement-form-hint">Review your details, tick the checkbox, then sign to continue.</p>
+          <p id="agreement-form-hint">Review the agreement, tick the checkbox and type your entire name, then select Sign Agreement to continue.</p>
           <button class="sign-agreement-button" id="sign-agreement" type="submit" disabled>Sign Agreement</button>
         </div>
         <div class="signature-animation-stage" id="signature-animation-stage" aria-label="Handwritten signature" hidden>

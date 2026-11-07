@@ -8,7 +8,7 @@ Your selected Sheet: https://docs.google.com/spreadsheets/d/1pY-wC0Bfb3QyDSBzGNb
 
 1. Open the Sheet as its owner and choose **Extensions → Apps Script**.
 2. Copy [Code.gs](../google-apps-script/Code.gs) and [State.gs](../google-apps-script/State.gs) into separate files in the Apps Script project. Remove the default sample function. `State.gs` is generated from the tested `server/sheet-state.mjs`; regenerate it with `npm run sheets:build` whenever that file changes.
-3. In **Project Settings → Script Properties**, set `SPREADSHEET_ID` and `SHEETS_STORE_SECRET`. A local, ignored `secrets/sheets-test-properties.json` has been prepared with your Sheet ID and a random secret. Copy its values directly into Script Properties; do not paste secrets into chat or commit them. The matching secret is already in `.env`.
+3. In **Project Settings → Script Properties**, set `SPREADSHEET_ID` and `SHEETS_STORE_SECRET`. A local, ignored `secrets/sheets-test-properties.json` has been prepared with your Sheet ID and a random secret. Copy its values directly into Script Properties;  do not paste secrets into chat or commit them. The matching secret is already in `.env`.
 4. Choose **Deploy → New deployment → Web app**, execute as **Me**, and allow access to **Anyone**. Authorize spreadsheet access. The endpoint is reachable publicly but every operation is protected by HMAC authentication; the spreadsheet itself must remain private. If your Workspace administrator prohibits this deployment mode, this approach will not work under that account.
 5. Copy the resulting `https://script.google.com/macros/s/.../exec` URL into `SHEETS_STORE_URL` in `.env`. Use `/exec`, not the editor or `/dev` URL.
 6. Run `npm.cmd run sheets:check`. This checks the signed connection and initializes the environment's tab; it creates no registration or payment.
@@ -33,9 +33,7 @@ Customer-entered values are stored as text to prevent spreadsheet formula inject
 5. Configure Brevo/SMTP and the approved invoice company address using [EMAIL-AND-SHEETS.md](../EMAIL-AND-SHEETS.md). Until configured, invoices remain downloadable and the confirmation screen does not claim that an email was sent.
 6. Test order creation, cancellation, failed-payment retry, a successful test payment, refresh, invoice download and mail delivery before switching to live mode.
 
-For live mode, use the live Razorpay pair and `PAYMENT_ENVIRONMENT=live`. The ignored `.env.production` retains the approved price and live keys; payments remain disabled there until activation. The current configuration shares the test SMTP settings, Apps Script URL and storage secret with production. The script separates test and live records into `RegistrationsTest` and `RegistrationsLive`. Keep the matching secret in that script's properties; do not overwrite it with the older separate `secrets/sheets-live-properties.json` value. Do not configure two different script projects to write the same environment tab.
-
-For invitation-only registration, deploy both updated `Code.gs` and `State.gs` before enabling `INVITATIONS_REQUIRED=true` in Netlify. The admin page uses the same ledger and requires the separate secret `INVITATION_ADMIN_KEY`. Follow [INVITATIONS.md](INVITATIONS.md).
+For live mode, use the live Razorpay pair and `PAYMENT_ENVIRONMENT=live`. The ignored `.env.production` retains the approved price and live keys; payments remain disabled there until activation. `secrets/sheets-live-properties.json` contains a separate storage secret: deploy a separate Apps Script project for live, using those properties, and put its /exec URL and matching secret in production settings. Do not configure two different script projects to write the same environment tab.
 
 ## Emails and scheduled retries
 

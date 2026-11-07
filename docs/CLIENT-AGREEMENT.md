@@ -78,4 +78,4 @@ Issues involving third-party services, equipment or changes outside the agreed s
 
 I have read and agree to the Client Agreement.
 
-Your name from Client Details is used as your signature. Select Sign Agreement to confirm acceptance.
+Type your entire name exactly as entered in Client Details. This will be your digital signature. Select Sign Agreement to confirm acceptance.

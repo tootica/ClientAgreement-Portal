@@ -12,7 +12,7 @@
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["pdfkit"]
-  included_files = ["node_modules/pdfkit/js/data/**"]
+  included_files = ["node_modules/pdfkit/js/data/**", "dist/index.html", "dist/assets/signature-handwriting.json"]
 
 [[headers]]
   for = "/*"

@@ -201,7 +201,6 @@ function renderClientDetails() {
       const paragraph = document.createElement('p'); paragraph.textContent = line; return paragraph;
     }));
   }
-  signatureInput.value = clientDetails.contactName;
 }
 function populateClientDetails(value, locked = false) {
   clientDetails = value;
@@ -248,6 +247,7 @@ detailsForm.addEventListener('submit', event => {
   if (!detailsForm.reportValidity() || !result.valid) return;
   if (JSON.stringify(clientDetails) !== JSON.stringify(result.value)) {
     agreementConsent.checked = false;
+    signatureInput.value = '';
     signatureAnimation.clear();
   }
   populateClientDetails(result.value,detailsLocked);
@@ -275,7 +275,11 @@ document.getElementById('package-form').addEventListener('submit',event=>{
   const error=document.getElementById('package-error');
   if (!availablePackage(value)) {error.textContent='Please select an available package to continue.';error.hidden=false;return;}
   error.hidden=true;
-  if (selectedPackage !== value) {agreementConsent.checked=false;signatureAnimation.clear();}
+  // Entering the agreement from package selection requires a fresh typed signature.
+  agreementConsent.checked=false;
+  signatureInput.value='';
+  signatureAnimation.clear();
+  signatureError.hidden=true;
   selectedPackage=value;
   renderClientDetails();
   updateAgreementRequirements();
@@ -310,7 +314,8 @@ const signatureAnimation = createSignatureAnimation({
 });
 function updateAgreementRequirements() {
   const hasSignature = signatureInput.value.trim().length > 0;
-  signatureInput.setCustomValidity(hasSignature ? '' : 'Please type your full name.');
+  const matchesContact = signatureInput.value.trim() === clientDetails?.contactName;
+  signatureInput.setCustomValidity(!hasSignature ? 'Please type your full name.' : !matchesContact ? 'Please type your entire name exactly as entered in Client Details.' : '');
   signAgreementButton.disabled = signingInProgress || !clientDetails || !(agreementConsent.checked && hasSignature && signatureInput.validity.valid && emailInput.value.trim() && emailInput.validity.valid);
 }
 agreementConsent.addEventListener('change', updateAgreementRequirements);

@@ -8,13 +8,14 @@ function fixture() {
   config.email={...config.email,enabled:true,allowTest:true,from:'noreply@tootica.com'};
   config.billing={...config.billing,address:'Approved company address'};
   const invoice=()=>({id:'test-invoice',reference:'INV-100',amount:123400,currency:'INR',environment:'test',state:'paid',customer_name:'Client Name',customer_email:'client@example.com',order_id:'order_test',payment_id:'pay_test',paid_at:1800000000000,billing_snapshot:JSON.stringify({...config.billing,description:'Registration'})});
-  return {config,invoice};
+  const acceptedInvoice=()=>({...invoice(),acceptance:{name:'Client Name',email:'client@example.com',version:'client-agreement-v1',accepted_at:1799999900000}});
+  return {config,invoice:acceptedInvoice};
 }
 test('email validation prevents header injection and malformed addresses', () => {
   assert.equal(normalizeEmail(' Client@EXAMPLE.COM '), 'Client@example.com');
   for (const email of ['', null, 'a@b', 'x\r\nBcc:other@example.com', 'two@@example.com', '.bad@example.com', 'a..b@example.com', 'a@-example.com']) assert.equal(normalizeEmail(email), null);
 });
-test('email adapter attaches a real PDF with a stable message ID and correct recipient', async t => {
+test('email adapter attaches invoice and accepted agreement PDFs with a stable message ID and correct recipient', async t => {
   const f = fixture(t); const messages = [];
   const sender = createEmailSender(f.config, {sendMail:async message => {messages.push(message); return {accepted:['client@example.com']};}});
   await sender(f.invoice()); await sender(f.invoice());
@@ -25,6 +26,28 @@ test('email adapter attaches a real PDF with a stable message ID and correct rec
   assert.match(messages[0].text, /INR 1234.00/);
   assert.equal(messages[0].attachments[0].content.subarray(0,5).toString(), '%PDF-');
   assert.equal(messages[0].attachments[0].contentType, 'application/pdf');
+  assert.match(messages[0].subject, /Invoice and Client Agreement/);
+  assert.match(messages[0].text, /paid invoice and a copy of your accepted Client Agreement/);
+  assert.equal(messages[0].attachments.length, 2);
+  assert.match(messages[0].attachments[1].filename, /^client-agreement-INV-100\.pdf$/);
+  assert.equal(messages[0].attachments[1].content.subarray(0,5).toString(), '%PDF-');
+  assert.equal(messages[0].attachments[1].contentType, 'application/pdf');
+});
+
+test('unpaid, failed and pending payments never send an invoice or agreement email', async () => {
+  const f=fixture();const messages=[];
+  const sender=createEmailSender(f.config,{sendMail:async message=>{messages.push(message);}});
+  for (const state of ['new','created','pending','failed','review']) {
+    await assert.rejects(sender({...f.invoice(),state}), /Payment must be confirmed/);
+  }
+  assert.equal(messages.length,0);
+});
+
+test('missing agreement acceptance prevents sending an incomplete confirmation email', async () => {
+  const f=fixture();let sends=0;
+  const sender=createEmailSender(f.config,{sendMail:async()=>{sends++;}});
+  await assert.rejects(sender({...f.invoice(),acceptance:undefined}), /acceptance is unavailable/);
+  assert.equal(sends,0);
 });
 test('SMTP rejection is retryable but disconnect during DATA is ambiguous', async t => {
   const f = fixture(t);
